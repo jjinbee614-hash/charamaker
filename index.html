@@ -1019,10 +1019,22 @@ async function pollJob(type, requestId, progressMsg='Processing...'){
 }
 
 function selectChallenge(key){ S.selectedChallenge=key; renderOutput(); }
-function downloadImage(){
+async function downloadImage(){
   if(!S.imageUrl) return;
-  const a=document.createElement('a'); a.href=S.imageUrl;
-  a.download=`${S.result?.name||'character'}.png`; a.click();
+  try {
+    const res=await fetch(S.imageUrl);
+    const blob=await res.blob();
+    const blobUrl=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=blobUrl;
+    a.download=`${S.result?.name||'character'}.jpg`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(blobUrl);
+  } catch(e){
+    toast('Download failed. Try right-click → Save image.','err');
+  }
 }
 function downloadVideo(){
   if(!S.videoUrl) return;
