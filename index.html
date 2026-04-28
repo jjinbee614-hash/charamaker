@@ -566,7 +566,7 @@ footer a:hover{color:var(--white)}
 
 <script>
 // ── CONFIG ──
-const API = 'https://api.charamaker.ai'; // Cloudflare Worker URL
+const API = 'https://charamaker-api.jjinbee614.workers.dev'; // Cloudflare Worker URL
 // For local dev: const API = 'http://localhost:8787';
 // NOTE: FAL_KEY below is used ONLY for fal.ai file upload.
 // In production, move uploads to a Worker endpoint to hide the key.
@@ -677,7 +677,7 @@ async function designCharacter(){
 
   try {
     const res=await fetch(`${API}/api/design`,{
-      method:'POST',headers:{'Content-Type':'application/json'},
+      method:'POST', headers:{'Content-Type':'application/json'},
       body:JSON.stringify(body)
     });
     const data=await res.json();
@@ -692,45 +692,7 @@ async function designCharacter(){
   }
   btn.disabled=false; sp.style.display='none'; gt.textContent='✦ Design My Character';
 }
-
-
-
-Style: ${styleNote}
-Description: ${descText}
-Niche: ${b.niche||'lifestyle'}
-${b.vibe?`Vibe: ${b.vibe}`:''}
-
-Respond ONLY with valid JSON (no markdown, no extra text):
-{
-  "name": "English character name (2-6 chars, catchy)",
-  "tagline": "one-line tagline (max 8 words)",
-  "emoji": "single emoji",
-  "personality": "personality in one sentence (max 15 words)",
-  "backstory": "intriguing backstory (60-90 chars)",
-  "niche_tags": ["tag1","tag2","tag3"],
-  "image_prompt": "Detailed image generation prompt in English. ${styleNote}. Include: face, outfit, lighting, pose, background, mood, camera lens, art style. 120-180 words. Do NOT mention any brand or tool names.",
-  "image_prompt_variation": "Alternative pose/outfit prompt for same character. 80-120 words.",
-  "challenges": {
-    "trending": {
-      "name": "name of a trending challenge format",
-      "angle": "how this character fits (max 50 chars)",
-      "motion_prompt": "Video motion prompt: natural movement, camera motion, atmosphere. Cinematic. 60-80 words.",
-      "hashtags": ["h1","h2","h3","h4","h5"]
-    },
-    "reference": {
-      "guide": "how to recreate a reference video style (max 50 chars)",
-      "motion_prompt": "Video motion prompt for reference-style. 60-80 words.",
-      "hashtags": ["h1","h2","h3","h4","h5"]
-    },
-    "template": {
-      "template_name": "recommended content template name",
-      "angle": "why this fits this character (max 50 chars)",
-      "motion_prompt": "Video motion prompt for template. 60-80 words.",
-      "hashtags": ["h1","h2","h3","h4","h5"]
-    }
-  },
-  "growth_tip": "One actionable growth tip (max 80 chars)"
-}`;
+`;
 }
 
 // ── RENDER OUTPUT ──
