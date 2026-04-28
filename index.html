@@ -566,11 +566,11 @@ footer a:hover{color:var(--white)}
 
 <script>
 // ── CONFIG ──
-const API = 'https://charamaker-api.jjinbee614.workers.dev'; // Cloudflare Worker URL
+const API = 'https://api.charamaker.ai'; // Cloudflare Worker URL
 // For local dev: const API = 'http://localhost:8787';
 // NOTE: FAL_KEY below is used ONLY for fal.ai file upload.
 // In production, move uploads to a Worker endpoint to hide the key.
-const FAL_KEY = '85b72acb-35a8-49bd-b71d-99044064b49d:10791c218996efb1aea5b1776ccb70ec'; // replace after regenerating
+const FAL_KEY = 'YOUR_NEW_FAL_KEY_HERE'; // replace after regenerating
 
 // ── STATE ──
 const S = {
@@ -676,20 +676,21 @@ async function designCharacter(){
   }
 
   try {
-    const res=await fetch(`${API}/api/design`,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify(body)
+    // Direct Claude API call (for demo — in production, route through Worker)
+    const prompt=buildDesignPrompt(body);
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:2000,messages:[{role:'user',content:prompt}]})
     });
     const data=await res.json();
     progStop();
-    if(!data.ok) throw new Error(data.error||'Design failed');
-    S.result=data.character;
-    S.imageUrl=null; S.videoUrl=null; S.referenceVideoUrl=null;
+    const raw=(data.content||[]).map(i=>i.text||'').join('').replace(/```json|```/g,'').trim();
+    const character=JSON.parse(raw);
+    S.result=character; S.imageUrl=null; S.videoUrl=null;
     renderOutput();
   } catch(e){
     progStop();
-    document.getElementById('out-content').innerHTML=`<div style="padding:2rem;text-align:center;color:var(--muted)">⚠️ ${e.message||'Something went wrong. Please try again.'}</div>`;
+    document.getElementById('out-content').innerHTML=`<div style="padding:2rem;text-align:center;color:var(--muted)">⚠️ Something went wrong. Please try again.</div>`;
   }
   btn.disabled=false; sp.style.display='none'; gt.textContent='✦ Design My Character';
 }
@@ -967,28 +968,38 @@ async function handleRefVideoUpload(event){
   } catch(e){ progStop(); toast(e.message||'Upload failed','err'); }
 }
 
-// ── VIDEO → Worker /api/video → Kling v2.6 motion-control ──
+// ── VIDEO → Worker /api/video → Full pipeline (frame extract → person swap → Kling) ──
 async function generateVideo(){
   if(!S.imageUrl||!S.referenceVideoUrl) return;
   const btn=document.getElementById('vid-gen-btn');
-  btn.disabled=true; btn.textContent='Applying motion...';
-  progStart('Transferring motion to your character...');
+  btn.disabled=true; btn.textContent='Processing...';
+
   try {
+    // Step 1+2 run in Worker backend, we just show progress messages
+    progStart('Analyzing reference video...');
     const res=await fetch(`${API}/api/video`,{
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
-        image_url: S.imageUrl,
+        profile_image_url: S.imageUrl,
         video_url: S.referenceVideoUrl,
-        character_orientation:'video',
       })
     });
     const data=await res.json();
     if(!data.ok) throw new Error(data.error||'submit failed');
-    const url=await pollJob('video', data.request_id, 'Rendering your challenge video... (1-3 min)');
+
+    // Show swapped frame preview if returned
+    if(data.swapped_image_url){
+      S.swappedImageUrl=data.swapped_image_url;
+    }
+
+    // Step 3: Poll Kling job
+    const url=await pollJob('video', data.request_id, 'Generating your challenge video... (1-3 min)');
     S.videoUrl=url;
     progStop(); toast('Video ready! ✓');
     renderOutput();
-  } catch(e){ progStop(); toast(e.message||'Video generation failed','err'); }
+  } catch(e){
+    progStop(); toast(e.message||'Video generation failed','err');
+  }
   btn.disabled=false; btn.textContent='✦ Apply Motion to My Character';
 }
 
@@ -1019,22 +1030,10 @@ async function pollJob(type, requestId, progressMsg='Processing...'){
 }
 
 function selectChallenge(key){ S.selectedChallenge=key; renderOutput(); }
-async function downloadImage(){
+function downloadImage(){
   if(!S.imageUrl) return;
-  try {
-    const res=await fetch(S.imageUrl);
-    const blob=await res.blob();
-    const blobUrl=URL.createObjectURL(blob);
-    const a=document.createElement('a');
-    a.href=blobUrl;
-    a.download=`${S.result?.name||'character'}.jpg`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(blobUrl);
-  } catch(e){
-    toast('Download failed. Try right-click → Save image.','err');
-  }
+  const a=document.createElement('a'); a.href=S.imageUrl;
+  a.download=`${S.result?.name||'character'}.png`; a.click();
 }
 function downloadVideo(){
   if(!S.videoUrl) return;
