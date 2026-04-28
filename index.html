@@ -676,21 +676,20 @@ async function designCharacter(){
   }
 
   try {
-    // Direct Claude API call (for demo — in production, route through Worker)
-    const prompt=buildDesignPrompt(body);
-    const res=await fetch('https://charamaker-api.jjinbee614.workers.dev/api/design',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:2000,messages:[{role:'user',content:prompt}]})
+    const res=await fetch(`${API}/api/design`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(body)
     });
     const data=await res.json();
     progStop();
-    const raw=(data.content||[]).map(i=>i.text||'').join('').replace(/```json|```/g,'').trim();
-    const character=JSON.parse(raw);
-    S.result=character; S.imageUrl=null; S.videoUrl=null;
+    if(!data.ok) throw new Error(data.error||'Design failed');
+    S.result=data.character;
+    S.imageUrl=null; S.videoUrl=null; S.referenceVideoUrl=null;
     renderOutput();
   } catch(e){
     progStop();
-    document.getElementById('out-content').innerHTML=`<div style="padding:2rem;text-align:center;color:var(--muted)">⚠️ Something went wrong. Please try again.</div>`;
+    document.getElementById('out-content').innerHTML=`<div style="padding:2rem;text-align:center;color:var(--muted)">⚠️ ${e.message||'Something went wrong. Please try again.'}</div>`;
   }
   btn.disabled=false; sp.style.display='none'; gt.textContent='✦ Design My Character';
 }
