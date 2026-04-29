@@ -557,11 +557,7 @@ async function createCharacter() {
   const niche = document.getElementById('cc-niche').value.trim();
   const persona = document.getElementById('cc-persona').value.trim();
 
-  if (!appearance && !persona && !name) {
-    toast('Please describe your character first', 'err');
-    return;
-  }
-
+  // Allow empty input — AI will decide everything
   const btn = document.getElementById('cc-btn');
   btn.disabled = true; btn.textContent = 'Designing...';
   progShow('cc', 'Designing character profile...');
