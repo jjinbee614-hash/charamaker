@@ -1,0 +1,16 @@
+# config with real values (use config.example.js as template)
+config.js
+
+# wrangler local state
+.wrangler/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# editor
+.vscode/
+.idea/
+
+# logs
+*.log
