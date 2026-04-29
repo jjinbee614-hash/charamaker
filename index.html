@@ -723,7 +723,12 @@ async function generateImage() {
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || 'submit failed');
 
-    const url = await pollJob(data.model, data.request_id, 'img', 'Rendering image...', data.status_url);
+    let url;
+    if (data.sync && data.output) {
+      url = data.output;
+    } else {
+      url = await pollJob(data.model, data.request_id, 'img', 'Rendering image...', data.status_url);
+    }
 
     // Save to Supabase
     await supa.from('images').insert({
