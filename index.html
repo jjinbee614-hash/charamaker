@@ -687,28 +687,50 @@ function renderCharacterResult(c) {
 // ═══════════════════════════════════════════════════════════
 async function generateImage() {
   if (!S.imgSelectedProfileId) { toast('Select a profile first', 'err'); return; }
-  let prompt = document.getElementById('img-prompt').value.trim();
+  let userPrompt = document.getElementById('img-prompt').value.trim();
+  const hasRef = !!S.imgRefImageUrl;
 
-  // If reference image uploaded, ask Claude to extract a prompt from it
-  if (S.imgRefImageUrl && !prompt) {
-    progShow('img', 'Analyzing reference image...');
-    try {
-      const aRes = await fetch(`${API}/api/image/analyze`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image_url: S.imgRefImageUrl })
-      });
-      const a = await aRes.json();
-      if (a.ok && a.prompt) prompt = a.prompt;
-    } catch {}
+  if (!userPrompt && !hasRef) {
+    toast('Add a prompt or reference image', 'err'); return;
   }
-
-  if (!prompt) { progHide('img'); toast('Add a prompt or reference image', 'err'); return; }
 
   const profile = S.characters.find(c => c.id === S.imgSelectedProfileId);
   if (!profile) { toast('Profile not found', 'err'); return; }
 
   const btn = document.getElementById('img-btn');
   btn.disabled = true; btn.textContent = 'Generating...';
+
+  // Step 1: If reference uploaded, analyze it with Claude
+  let analyzedPrompt = '';
+  if (hasRef) {
+    progShow('img', 'Analyzing reference image with AI...');
+    try {
+      const aRes = await fetch(`${API}/api/image/analyze`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image_url: S.imgRefImageUrl })
+      });
+      const a = await aRes.json();
+      if (a.ok && a.prompt) analyzedPrompt = a.prompt;
+      else throw new Error(a.error || 'analysis failed');
+    } catch (e) {
+      progHide('img'); btn.disabled = false; btn.textContent = '✦ Generate Image';
+      toast('Reference analysis failed: ' + (e.message || ''), 'err');
+      return;
+    }
+  }
+
+  // Combine prompts: user text + analyzed reference (no faces)
+  let finalPrompt;
+  if (userPrompt && analyzedPrompt) {
+    finalPrompt = `${userPrompt}. Style/composition reference: ${analyzedPrompt}`;
+  } else {
+    finalPrompt = userPrompt || analyzedPrompt;
+  }
+  // Always emphasize keeping the same character
+  finalPrompt = `Keep the same person/character from the input image. ${finalPrompt}`;
+
+  console.log('[generateImage] final prompt:', finalPrompt);
+
   progShow('img', 'Generating image (1-2 min)...');
 
   try {
@@ -716,8 +738,8 @@ async function generateImage() {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         profile_image_url: profile.image_url,
-        prompt,
-        reference_image_url: S.imgRefImageUrl,
+        prompt: finalPrompt,
+        // Do NOT pass reference_image_url — we extracted its info into the prompt instead
       })
     });
     const data = await res.json();
