@@ -635,9 +635,15 @@ async function createCharacter() {
       body: JSON.stringify({ prompt: character.image_prompt })
     });
     const imgData = await imgRes.json();
-    if (!imgData.ok) throw new Error('image submit failed');
+    if (!imgData.ok) throw new Error(imgData.error || 'image submit failed');
 
-    const imageUrl = await pollJob(imgData.model, imgData.request_id, 'cc', 'Rendering character face...', imgData.status_url);
+    // Sync response — got result directly (no polling needed)
+    let imageUrl;
+    if (imgData.sync && imgData.output) {
+      imageUrl = imgData.output;
+    } else {
+      imageUrl = await pollJob(imgData.model, imgData.request_id, 'cc', 'Rendering character face...', imgData.status_url);
+    }
 
     // Step 3: Save to Supabase
     progShow('cc', 'Saving to your library...');
