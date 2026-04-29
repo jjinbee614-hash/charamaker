@@ -637,7 +637,7 @@ async function createCharacter() {
     const imgData = await imgRes.json();
     if (!imgData.ok) throw new Error('image submit failed');
 
-    const imageUrl = await pollJob(imgData.model, imgData.request_id, 'cc', 'Rendering character face...');
+    const imageUrl = await pollJob(imgData.model, imgData.request_id, 'cc', 'Rendering character face...', imgData.status_url);
 
     // Step 3: Save to Supabase
     progShow('cc', 'Saving to your library...');
@@ -717,7 +717,7 @@ async function generateImage() {
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || 'submit failed');
 
-    const url = await pollJob(data.model, data.request_id, 'img', 'Rendering image...');
+    const url = await pollJob(data.model, data.request_id, 'img', 'Rendering image...', data.status_url);
 
     // Save to Supabase
     await supa.from('images').insert({
@@ -764,7 +764,7 @@ async function generateVideo() {
     if (!data.ok) throw new Error(data.error || 'submit failed');
 
     progShow('vid', 'Step 3: Applying motion (2-4 min)...');
-    const url = await pollJob(data.model, data.request_id, 'vid', 'Rendering final video...');
+    const url = await pollJob(data.model, data.request_id, 'vid', 'Rendering final video...', data.status_url);
 
     // Save
     await supa.from('videos').insert({
@@ -788,12 +788,16 @@ async function generateVideo() {
 // ═══════════════════════════════════════════════════════════
 // JOB POLLING (uses model path + request_id)
 // ═══════════════════════════════════════════════════════════
-async function pollJob(modelPath, requestId, progPrefix, msg) {
+async function pollJob(modelPath, requestId, progPrefix, msg, statusUrl) {
   return new Promise((resolve, reject) => {
     let polls = 0;
     const iv = setInterval(async () => {
       try {
-        const res = await fetch(`${API}/api/status/${modelPath}/${requestId}`);
+        // Prefer status_url (passed from submit response), fallback to constructing
+        const url = statusUrl
+          ? `${API}/api/status/?status_url=${encodeURIComponent(statusUrl)}`
+          : `${API}/api/status/${modelPath}/${requestId}`;
+        const res = await fetch(url);
         const data = await res.json();
 
         if (data.status === 'done') {
