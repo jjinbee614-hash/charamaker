@@ -795,7 +795,7 @@ async function pollJob(modelPath, requestId, progPrefix, msg, statusUrl) {
       try {
         // Prefer status_url (passed from submit response), fallback to constructing
         const url = statusUrl
-          ? `${API}/api/status/?status_url=${encodeURIComponent(statusUrl)}`
+          ? `${API}/api/status/?status_url=${encodeURIComponent(statusUrl)}&model=${encodeURIComponent(modelPath)}`
           : `${API}/api/status/${modelPath}/${requestId}`;
         const res = await fetch(url);
         const data = await res.json();
