@@ -3,1023 +3,866 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CharaMaker — Create Your AI Character & Go Viral</title>
-<meta name="description" content="Build your AI character, generate stunning images, and create viral challenge videos — no camera, no editing skills needed.">
-<meta property="og:title" content="CharaMaker — AI Character Studio">
-<meta property="og:description" content="Create an AI character and make viral challenge videos in minutes.">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,300&display=swap" rel="stylesheet">
+<title>CharaMaker — Create Your AI Character</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
-  --bg:#060609;--s1:#0d0d12;--s2:#14141b;--s3:#1c1c25;
-  --white:#ede9ff;--muted:#5c596e;--border:rgba(255,255,255,0.07);
-  --v:#a78bfa;--v2:#7c3aed;--p:#f472b6;--c:#22d3ee;
-  --g:#4ade80;--a:#fbbf24;--r:#f87171;
+  --bg:#06060a; --s1:#0e0e14; --s2:#16161e; --s3:#1d1d27;
+  --white:#ede9ff; --muted:#5c596e; --border:rgba(255,255,255,0.08);
+  --v:#a78bfa; --p:#f472b6; --c:#22d3ee; --g:#4ade80; --r:#f87171;
   --grad:linear-gradient(135deg,#a78bfa 0%,#f472b6 100%);
-  --grad2:linear-gradient(135deg,#22d3ee 0%,#a78bfa 100%)
 }
 html{scroll-behavior:smooth}
 body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;overflow-x:hidden}
 
 /* ── AMBIENT ── */
-.amb{position:fixed;border-radius:50%;filter:blur(140px);pointer-events:none;z-index:0;transition:all 1s ease}
-.amb1{width:700px;height:700px;background:rgba(167,139,250,0.1);top:-250px;left:-150px;animation:a1 14s ease-in-out infinite}
-.amb2{width:500px;height:500px;background:rgba(244,114,182,0.08);bottom:-100px;right:-100px;animation:a2 18s ease-in-out infinite}
-.amb3{width:400px;height:400px;background:rgba(34,211,238,0.05);top:40%;left:40%;animation:a3 20s ease-in-out infinite}
-@keyframes a1{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(80px,50px) scale(1.1)}}
-@keyframes a2{0%,100%{transform:translate(0,0)}50%{transform:translate(-50px,-70px)}}
-@keyframes a3{0%,100%{transform:translate(0,0)}50%{transform:translate(30px,-40px)}}
+.amb{position:fixed;border-radius:50%;filter:blur(140px);pointer-events:none;z-index:0}
+.amb1{width:600px;height:600px;background:rgba(167,139,250,.1);top:-200px;left:-100px}
+.amb2{width:500px;height:500px;background:rgba(244,114,182,.08);bottom:-100px;right:-100px}
 
-/* ── NAV ── */
-nav{position:fixed;top:0;left:0;right:0;z-index:200;height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 2.5rem;border-bottom:1px solid var(--border);background:rgba(6,6,9,0.88);backdrop-filter:blur(20px)}
-.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.25rem;letter-spacing:-0.02em;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;cursor:pointer;text-decoration:none}
-.nav-mid{display:flex;gap:2rem}
-.nav-mid a{color:var(--muted);text-decoration:none;font-size:0.82rem;font-weight:500;transition:color .2s;cursor:pointer}
-.nav-mid a:hover{color:var(--white)}
-.nav-right{display:flex;gap:0.8rem;align-items:center}
-.nav-sign{background:transparent;border:1px solid var(--border);color:var(--white);padding:0.4rem 1rem;border-radius:100px;font-size:0.8rem;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s}
-.nav-sign:hover{border-color:rgba(167,139,250,0.4)}
-.nav-start{background:var(--grad);border:none;color:#fff;padding:0.4rem 1.1rem;border-radius:100px;font-size:0.8rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:opacity .2s}
-.nav-start:hover{opacity:0.85}
+/* ══════════════════════════════════════════════
+   HOME PAGE
+   ══════════════════════════════════════════════ */
+.home{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4rem 2rem;text-align:center;position:relative;z-index:1}
+.home.hidden{display:none}
+.home-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.4rem;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:3rem;letter-spacing:-0.02em}
+.home-pill{display:inline-flex;align-items:center;gap:.5rem;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.25);color:var(--v);padding:.3rem 1rem;border-radius:100px;font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:2rem}
+.home-pill::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--v);animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+.home-h1{font-family:'Syne',sans-serif;font-size:clamp(2.8rem,8vw,6rem);font-weight:800;line-height:.95;letter-spacing:-.04em;margin-bottom:1.5rem;max-width:900px}
+.home-h1 .gr{background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.home-sub{font-size:clamp(1rem,2vw,1.15rem);color:var(--muted);max-width:600px;line-height:1.7;margin-bottom:3rem;font-weight:300}
+.home-sub b{color:var(--white);font-weight:500}
+.home-cta{background:var(--grad);border:none;padding:1rem 2.5rem;border-radius:100px;font-weight:700;font-size:1rem;color:#fff;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .25s;letter-spacing:.02em;box-shadow:0 8px 30px rgba(167,139,250,.25)}
+.home-cta:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(167,139,250,.4)}
+.home-features{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1.5rem;max-width:900px;margin-top:5rem;width:100%}
+.feat{background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:1.5rem;text-align:left;transition:all .3s}
+.feat:hover{border-color:rgba(167,139,250,.25);transform:translateY(-2px)}
+.feat-icon{width:36px;height:36px;border-radius:8px;background:rgba(167,139,250,.12);border:1px solid rgba(167,139,250,.25);display:flex;align-items:center;justify-content:center;font-size:1rem;margin-bottom:.9rem}
+.feat-title{font-weight:700;font-size:.92rem;margin-bottom:.4rem;color:var(--white)}
+.feat-desc{font-size:.8rem;color:var(--muted);line-height:1.55}
 
-/* ── HERO ── */
-.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:5rem 2rem 3rem;position:relative;z-index:1}
-.hero-kicker{display:inline-flex;align-items:center;gap:0.5rem;background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.2);color:var(--v);padding:0.3rem 1rem;border-radius:100px;font-size:0.72rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:2.5rem;animation:up .7s ease both}
-.kicker-dot{width:5px;height:5px;border-radius:50%;background:var(--v);animation:blink 2s infinite}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:0.2}}
-@keyframes up{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
-h1.hh{font-family:'Syne',sans-serif;font-size:clamp(3rem,9vw,7rem);font-weight:800;line-height:.92;letter-spacing:-0.04em;margin-bottom:1.5rem;animation:up .7s .1s ease both}
-.hh .gr{background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.hh .gr2{background:var(--grad2);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.hero-sub{font-size:clamp(.95rem,2vw,1.1rem);color:var(--muted);max-width:520px;line-height:1.8;margin-bottom:3rem;font-weight:300;animation:up .7s .2s ease both}
-.hero-sub b{color:var(--white);font-weight:500}
-.hero-ctas{display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;margin-bottom:5rem;animation:up .7s .3s ease both}
-.btn-grad{background:var(--grad);border:none;padding:.85rem 2rem;border-radius:100px;font-weight:700;font-size:.95rem;cursor:pointer;font-family:'DM Sans',sans-serif;color:#fff;transition:all .2s;letter-spacing:.02em}
-.btn-grad:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 10px 30px rgba(167,139,250,.25)}
-.btn-ghost{background:transparent;border:1px solid var(--border);padding:.85rem 2rem;border-radius:100px;font-weight:500;font-size:.95rem;cursor:pointer;font-family:'DM Sans',sans-serif;color:var(--white);transition:all .2s}
-.btn-ghost:hover{border-color:rgba(167,139,250,.35);background:rgba(167,139,250,.05)}
+/* ══════════════════════════════════════════════
+   STUDIO PAGE (sidebar layout)
+   ══════════════════════════════════════════════ */
+.studio{display:none;min-height:100vh;position:relative;z-index:1}
+.studio.active{display:grid;grid-template-columns:240px 1fr}
 
-/* hero char cards */
-.char-showcase{display:flex;gap:1.2rem;justify-content:center;flex-wrap:wrap;animation:up .7s .4s ease both}
-.showcase-card{background:var(--s2);border:1px solid var(--border);border-radius:18px;padding:1.1rem;width:120px;text-align:center;transition:all .3s;cursor:default}
-.showcase-card:nth-child(2){margin-top:-18px}
-.showcase-card:nth-child(3){margin-top:10px}
-.showcase-card:hover{transform:translateY(-5px);border-color:rgba(167,139,250,.25)}
-.sc-avi{width:80px;height:80px;border-radius:12px;margin:0 auto .6rem;display:flex;align-items:center;justify-content:center;font-size:2.2rem}
-.sc-name{font-family:'Syne',sans-serif;font-size:.78rem;font-weight:800;color:var(--white);margin-bottom:.15rem}
-.sc-sub{font-size:.62rem;color:var(--muted)}
-.sc-pill{display:inline-block;margin-top:.35rem;font-size:.58rem;font-weight:700;padding:.12rem .5rem;border-radius:100px;text-transform:uppercase;letter-spacing:.04em}
-.pill-v{background:rgba(167,139,250,.12);color:var(--v);border:1px solid rgba(167,139,250,.2)}
-.pill-p{background:rgba(244,114,182,.12);color:var(--p);border:1px solid rgba(244,114,182,.2)}
-.pill-c{background:rgba(34,211,238,.12);color:var(--c);border:1px solid rgba(34,211,238,.2)}
+/* Sidebar */
+.sidebar{background:var(--s1);border-right:1px solid var(--border);padding:1.5rem 1rem;display:flex;flex-direction:column;height:100vh;position:sticky;top:0}
+.sb-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.2rem;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;cursor:pointer;padding:0 .5rem;margin-bottom:2rem;letter-spacing:-.02em}
+.sb-tabs{display:flex;flex-direction:column;gap:.3rem}
+.sb-tab{display:flex;align-items:center;gap:.7rem;padding:.7rem .9rem;border-radius:8px;background:transparent;border:none;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:.85rem;cursor:pointer;transition:all .2s;text-align:left;font-weight:500}
+.sb-tab:hover{background:var(--s2);color:var(--white)}
+.sb-tab.active{background:rgba(167,139,250,.1);color:var(--v);font-weight:600}
+.sb-tab-icon{font-size:1.05rem;width:18px;text-align:center;flex-shrink:0}
+.sb-bottom{margin-top:auto;padding:.5rem;font-size:.7rem;color:var(--muted);border-top:1px solid var(--border);padding-top:1rem}
 
-/* ── PIPELINE ── */
-.section{padding:6rem 2rem;position:relative;z-index:1}
-.cont{max-width:1080px;margin:0 auto}
-.sec-kicker{font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--v);margin-bottom:.7rem}
-.sec-h{font-family:'Syne',sans-serif;font-size:clamp(2rem,5vw,3.8rem);font-weight:800;line-height:.95;letter-spacing:-.03em;margin-bottom:1.2rem}
-.sec-sub{color:var(--muted);font-size:.93rem;line-height:1.75;max-width:480px;font-weight:300}
+/* Main */
+.main{padding:2rem 2.5rem;min-height:100vh;overflow-y:auto}
+.page{display:none}
+.page.active{display:block}
+.page-h1{font-family:'Syne',sans-serif;font-size:2rem;font-weight:800;letter-spacing:-.02em;margin-bottom:.4rem}
+.page-sub{font-size:.9rem;color:var(--muted);margin-bottom:2rem;line-height:1.6;max-width:600px}
 
-.pipe{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-top:3.5rem}
-.pipe-step{background:var(--s1);padding:1.8rem 1.5rem;position:relative;transition:background .25s}
-.pipe-step:hover{background:var(--s2)}
-.ps-num{font-family:'Syne',sans-serif;font-size:5rem;font-weight:800;color:rgba(255,255,255,.03);position:absolute;top:.8rem;right:1rem;line-height:1}
-.ps-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;margin-bottom:1.2rem;border:1px solid}
-.ico-v{background:rgba(167,139,250,.1);border-color:rgba(167,139,250,.2)}
-.ico-p{background:rgba(244,114,182,.1);border-color:rgba(244,114,182,.2)}
-.ico-c{background:rgba(34,211,238,.1);border-color:rgba(34,211,238,.2)}
-.ico-g{background:rgba(74,222,128,.1);border-color:rgba(74,222,128,.2)}
-.ps-title{font-weight:700;font-size:.92rem;color:var(--white);margin-bottom:.4rem}
-.ps-desc{font-size:.8rem;color:var(--muted);line-height:1.55}
+/* Layout helpers */
+.row{display:grid;gap:1.5rem}
+.row-2{grid-template-columns:1fr 1fr}
+@media(max-width:900px){.row-2{grid-template-columns:1fr}}
+.card{background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:1.5rem}
+.card-title{font-weight:700;font-size:.95rem;margin-bottom:1rem;color:var(--white);display:flex;align-items:center;gap:.5rem}
 
-/* ── STUDIO ── */
-.studio-bg{background:var(--s1)}
-.studio-shell{display:grid;grid-template-columns:360px 1fr;gap:0;border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-top:3.5rem;min-height:680px}
+/* Form */
+.fld{margin-bottom:1.1rem}
+.fld-label{display:block;font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.4rem}
+input[type=text],textarea,select{width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:.7rem .9rem;color:var(--white);font-family:'DM Sans',sans-serif;font-size:.88rem;outline:none;transition:border-color .2s;resize:vertical}
+input:focus,textarea:focus,select:focus{border-color:rgba(167,139,250,.5)}
 
-/* sidebar */
-.sb{background:var(--bg);border-right:1px solid var(--border);padding:1.6rem;display:flex;flex-direction:column;gap:1rem}
-.sb-tabs{display:flex;gap:0;background:var(--s2);border-radius:8px;padding:3px}
-.sb-tab{flex:1;padding:.5rem;background:transparent;border:none;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:.76rem;font-weight:500;cursor:pointer;border-radius:5px;transition:all .2s;text-align:center}
-.sb-tab.on{background:var(--s3);color:var(--white);font-weight:700}
-.fld{display:flex;flex-direction:column;gap:.35rem}
-.fld-label{font-size:.68rem;font-weight:700;color:var(--muted);letter-spacing:.07em;text-transform:uppercase}
-textarea,input[type=text],select{width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:.6rem .85rem;color:var(--white);font-family:'DM Sans',sans-serif;font-size:.83rem;outline:none;transition:border-color .2s;resize:vertical}
-textarea:focus,input:focus,select:focus{border-color:rgba(167,139,250,.45)}
-select option{background:var(--s2)}
+/* Buttons */
+.btn{padding:.7rem 1.3rem;border-radius:8px;font-weight:700;font-size:.88rem;cursor:pointer;font-family:'DM Sans',sans-serif;border:none;transition:all .2s;display:inline-flex;align-items:center;justify-content:center;gap:.4rem;letter-spacing:.02em}
+.btn-grad{background:var(--grad);color:#fff}
+.btn-grad:hover:not(:disabled){opacity:.9;transform:translateY(-1px)}
+.btn-grad:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.btn-ghost{background:var(--s2);border:1px solid var(--border);color:var(--white)}
+.btn-ghost:hover{border-color:rgba(167,139,250,.35)}
+.btn-full{width:100%}
 
-/* style picker */
-.style-pick{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}
-.sp-opt{border:1px solid var(--border);border-radius:10px;padding:.75rem .6rem;cursor:pointer;transition:all .2s;text-align:center;background:var(--s2)}
-.sp-opt:hover{border-color:rgba(167,139,250,.3)}
-.sp-opt.on{border-color:var(--v);background:rgba(167,139,250,.07)}
-.sp-icon{font-size:1.3rem;margin-bottom:.3rem}
-.sp-label{font-size:.72rem;font-weight:700;color:var(--white)}
-.sp-sub{font-size:.6rem;color:var(--muted);margin-top:.1rem}
+/* Upload zone */
+.upload{border:2px dashed var(--border);border-radius:10px;padding:1.4rem;text-align:center;cursor:pointer;transition:all .2s;background:var(--s2)}
+.upload:hover{border-color:rgba(167,139,250,.4);background:rgba(167,139,250,.04)}
+.upload input{display:none}
+.upload-icon{font-size:1.4rem;opacity:.4;margin-bottom:.4rem}
+.upload-text{font-size:.83rem;color:var(--muted)}
+.upload-hint{font-size:.7rem;color:var(--muted);margin-top:.2rem}
+.upload.has-file{border-style:solid;border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.04)}
+.upload.has-file .upload-text{color:var(--g);font-weight:600}
 
-/* chips */
-.chips{display:flex;flex-wrap:wrap;gap:.35rem}
-.chip{padding:.28rem .7rem;border-radius:100px;border:1px solid var(--border);font-size:.7rem;cursor:pointer;transition:all .2s;color:var(--muted);font-family:'DM Sans',sans-serif;background:transparent}
-.chip:hover{border-color:var(--v);color:var(--v)}
-.chip.on{background:rgba(167,139,250,.1);border-color:var(--v);color:var(--v);font-weight:700}
+/* Image preview */
+.img-preview{width:100%;aspect-ratio:1/1;background:var(--s2);border:1px solid var(--border);border-radius:10px;overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.85rem}
+.img-preview img{width:100%;height:100%;object-fit:cover;display:block}
 
-/* sliders */
-.sl-row{display:flex;align-items:center;gap:.6rem}
-.sl-lbl{font-size:.68rem;color:var(--muted);width:80px;flex-shrink:0;line-height:1.3}
-input[type=range]{flex:1;height:3px;background:var(--s3);border-radius:2px;outline:none;border:none;padding:0;-webkit-appearance:none;cursor:pointer}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:var(--v);cursor:pointer;border:2px solid var(--bg)}
-.sl-val{font-size:.68rem;color:var(--v);font-weight:700;width:20px;text-align:right}
+/* Video preview */
+.vid-preview{width:100%;aspect-ratio:9/16;max-height:400px;background:var(--s2);border:1px solid var(--border);border-radius:10px;overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.85rem}
+.vid-preview video{width:100%;height:100%;object-fit:cover;display:block}
 
-/* generate button */
-.gen{width:100%;background:var(--grad);border:none;padding:.85rem;border-radius:10px;font-weight:700;font-size:.9rem;cursor:pointer;font-family:'DM Sans',sans-serif;color:#fff;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:.5rem;margin-top:auto}
-.gen:hover:not(:disabled){opacity:.88;transform:translateY(-1px)}
-.gen:disabled{opacity:.35;cursor:not-allowed;transform:none}
+/* Profile picker (grid of saved characters) */
+.profile-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:.7rem;max-height:280px;overflow-y:auto;padding:.3rem}
+.profile-card{background:var(--s2);border:2px solid var(--border);border-radius:10px;padding:.5rem;cursor:pointer;transition:all .2s;text-align:center}
+.profile-card:hover{border-color:rgba(167,139,250,.3)}
+.profile-card.selected{border-color:var(--v);background:rgba(167,139,250,.08)}
+.profile-card-img{width:100%;aspect-ratio:1/1;background:var(--s3);border-radius:6px;overflow:hidden;margin-bottom:.4rem}
+.profile-card-img img{width:100%;height:100%;object-fit:cover}
+.profile-card-name{font-size:.72rem;font-weight:700;color:var(--white);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.profile-empty{grid-column:1/-1;text-align:center;color:var(--muted);font-size:.85rem;padding:2rem 1rem}
 
-/* ── MAIN PANEL ── */
-.main{display:flex;flex-direction:column;padding:1.6rem;background:var(--s1);min-height:680px}
-.out-tabs{display:flex;gap:0;background:var(--s2);border-radius:8px;padding:3px;max-width:380px;margin-bottom:1.4rem}
-.out-tab{flex:1;padding:.48rem;background:transparent;border:none;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:.74rem;font-weight:500;cursor:pointer;border-radius:5px;transition:all .2s;text-align:center;white-space:nowrap}
-.out-tab.on{background:var(--s3);color:var(--white);font-weight:700}
+/* Character info display */
+.char-info{display:grid;grid-template-columns:120px 1fr;gap:1rem;margin-bottom:1rem;padding-bottom:1rem;border-bottom:1px solid var(--border)}
+.char-info-img{width:120px;height:120px;border-radius:12px;background:var(--s2);overflow:hidden;border:1px solid var(--border)}
+.char-info-img img{width:100%;height:100%;object-fit:cover}
+.char-info-text{display:flex;flex-direction:column;gap:.4rem}
+.char-info-name{font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:800;color:var(--white)}
+.char-info-niche{font-size:.75rem;color:var(--v);font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+.char-info-persona{font-size:.85rem;color:var(--muted);line-height:1.55}
 
-/* progress */
-.prog-wrap{height:2px;background:var(--s3);border-radius:1px;overflow:hidden;margin-bottom:.8rem;display:none}
-.prog-fill{height:100%;background:var(--grad);border-radius:1px;width:0%;transition:width .35s}
-.prog-msg{font-size:.78rem;color:var(--muted);margin-bottom:1rem;display:none}
+/* History tab */
+.history-section{margin-bottom:2.5rem}
+.history-h{font-weight:700;font-size:1rem;color:var(--white);margin-bottom:1rem;display:flex;align-items:center;gap:.5rem}
+.history-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:1rem}
+.history-card{background:var(--s1);border:1px solid var(--border);border-radius:12px;overflow:hidden;cursor:pointer;transition:all .25s}
+.history-card:hover{border-color:rgba(167,139,250,.3);transform:translateY(-3px)}
+.history-thumb{width:100%;aspect-ratio:1/1;background:var(--s3);overflow:hidden}
+.history-thumb img,.history-thumb video{width:100%;height:100%;object-fit:cover;display:block}
+.history-info{padding:.7rem .85rem}
+.history-name{font-size:.78rem;font-weight:700;color:var(--white);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.history-time{font-size:.66rem;color:var(--muted);margin-top:.15rem}
+.history-empty{text-align:center;padding:3rem 1rem;color:var(--muted);font-size:.88rem;background:var(--s1);border:1px solid var(--border);border-radius:12px}
 
-/* output shell */
-.out{flex:1;border:1px solid var(--border);border-radius:12px;background:var(--bg);display:flex;flex-direction:column;min-height:500px;overflow:hidden}
-.out-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.9rem;color:var(--muted);text-align:center;padding:2rem}
-.out-empty .big{font-size:2.5rem;opacity:.25}
-.out-body{flex:1;overflow-y:auto;padding:1.2rem}
-.out-hdr{padding:.9rem 1.2rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
-.out-hdr-name{font-family:'Syne',sans-serif;font-size:.95rem;font-weight:800;color:var(--white)}
-.hdr-btns{display:flex;gap:.4rem}
-.hdr-btn{background:var(--s2);border:1px solid var(--border);color:var(--muted);padding:.28rem .65rem;border-radius:6px;font-size:.7rem;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s}
-.hdr-btn:hover{color:var(--white);border-color:rgba(255,255,255,.15)}
+/* Progress / loading */
+.prog{display:none;background:rgba(167,139,250,.06);border:1px solid rgba(167,139,250,.2);border-radius:10px;padding:.8rem 1rem;margin-bottom:1rem;font-size:.82rem;color:var(--v);align-items:center;gap:.7rem}
+.prog.show{display:flex}
+.spin{width:14px;height:14px;border:2px solid rgba(167,139,250,.3);border-top-color:var(--v);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
 
-/* char card */
-.char-card{display:grid;grid-template-columns:auto 1fr;gap:1.2rem;align-items:start;margin-bottom:1.2rem;padding-bottom:1.2rem;border-bottom:1px solid var(--border)}
-.char-avi{width:100px;height:100px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:3rem;background:var(--s2);border:1px solid var(--border);flex-shrink:0}
-.char-info{display:flex;flex-direction:column;gap:.45rem}
-.char-name{font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:800;color:var(--white)}
-.char-tagline{font-size:.78rem;color:var(--v);font-weight:600}
-.char-story{font-size:.8rem;color:var(--muted);line-height:1.6}
-.char-tags-row{display:flex;gap:.35rem;flex-wrap:wrap}
-.ctag{font-size:.62rem;padding:.18rem .55rem;border-radius:100px;font-weight:700}
-.ctag-v{background:rgba(167,139,250,.1);color:var(--v);border:1px solid rgba(167,139,250,.2)}
-.ctag-p{background:rgba(244,114,182,.1);color:var(--p);border:1px solid rgba(244,114,182,.2)}
-.ctag-c{background:rgba(34,211,238,.1);color:var(--c);border:1px solid rgba(34,211,238,.2)}
-.tip-box{background:rgba(167,139,250,.06);border-radius:8px;padding:.85rem;border-left:2px solid var(--v)}
-.tip-label{font-size:.62rem;font-weight:700;color:var(--v);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.4rem}
-.tip-text{font-size:.8rem;color:var(--muted);line-height:1.55}
-
-/* image panel */
-.img-panel{display:flex;flex-direction:column;gap:1rem}
-.img-stage{background:var(--s2);border:1px solid var(--border);border-radius:12px;width:100%;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
-.img-stage img{width:100%;height:100%;object-fit:cover;border-radius:12px}
-.img-placeholder{font-size:2rem;color:var(--muted);opacity:.4;display:flex;flex-direction:column;align-items:center;gap:.5rem}
-.img-placeholder span{font-size:.75rem}
-.variation-btns{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem}
-.var-btn{background:var(--s2);border:1px solid var(--border);color:var(--muted);padding:.55rem;border-radius:8px;font-size:.72rem;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;text-align:center}
-.var-btn:hover{border-color:rgba(167,139,250,.3);color:var(--white)}
-.var-btn:disabled{opacity:.35;cursor:not-allowed}
-.img-gen-btn{background:var(--grad);border:none;color:#fff;padding:.7rem;border-radius:8px;font-weight:700;font-size:.82rem;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;width:100%}
-.img-gen-btn:hover:not(:disabled){opacity:.85}
-.img-gen-btn:disabled{opacity:.35;cursor:not-allowed}
-
-/* video panel */
-.vid-panel{display:flex;flex-direction:column;gap:1rem}
-.chall-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem}
-.chall{background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:.9rem .75rem;cursor:pointer;transition:all .2s}
-.chall:hover{border-color:rgba(167,139,250,.3);transform:translateY(-2px)}
-.chall.on{border-color:var(--v);background:rgba(167,139,250,.06)}
-.chall-icon{font-size:1.3rem;margin-bottom:.35rem}
-.chall-name{font-size:.72rem;font-weight:700;color:var(--white);margin-bottom:.18rem}
-.chall-sub{font-size:.63rem;color:var(--muted);line-height:1.35}
-.chall-hot{font-size:.58rem;color:var(--g);font-weight:700;margin-top:.3rem}
-.vid-stage{background:var(--s2);border:1px solid var(--border);border-radius:12px;aspect-ratio:9/16;max-height:280px;display:flex;align-items:center;justify-content:center;overflow:hidden}
-.vid-stage video{width:100%;height:100%;object-fit:cover;border-radius:12px}
-.vid-motion-prompt{background:var(--s2);border-radius:8px;padding:.85rem;border-left:2px solid var(--p);font-size:.75rem;color:var(--muted);line-height:1.6}
-.vid-motion-label{font-size:.6rem;font-weight:700;color:var(--p);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.4rem}
-.vid-gen-btn{background:var(--grad);border:none;color:#fff;padding:.7rem;border-radius:8px;font-weight:700;font-size:.82rem;cursor:pointer;font-family:'DM Sans',sans-serif;width:100%;transition:all .2s}
-.vid-gen-btn:hover:not(:disabled){opacity:.85}
-.vid-gen-btn:disabled{opacity:.35;cursor:not-allowed}
-.vid-note{font-size:.7rem;color:var(--muted);text-align:center;line-height:1.5}
-.upload-zone{border:2px dashed var(--border);border-radius:10px;padding:1.5rem;text-align:center;cursor:pointer;transition:all .2s;background:var(--s2);margin-bottom:.6rem}
-.upload-zone:hover{border-color:rgba(167,139,250,.4);background:rgba(167,139,250,.04)}
-.dl-btn{background:var(--s2);border:1px solid rgba(74,222,128,.2);color:var(--g);padding:.6rem 1.2rem;border-radius:8px;font-weight:700;font-size:.78rem;cursor:pointer;font-family:'DM Sans',sans-serif;display:inline-flex;align-items:center;gap:.4rem;transition:all .2s}
-.dl-btn:hover{background:rgba(74,222,128,.08)}
-
-/* ── TOAST ── */
-.toast{position:fixed;bottom:1.5rem;right:1.5rem;z-index:999;background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:.85rem 1.3rem;font-size:.83rem;transform:translateY(60px);opacity:0;transition:all .3s;max-width:280px;line-height:1.4}
+/* Toast */
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:.85rem 1.3rem;font-size:.84rem;transform:translateY(80px);opacity:0;transition:all .3s;z-index:9999;max-width:300px}
 .toast.show{transform:translateY(0);opacity:1}
 .toast.ok{border-color:rgba(74,222,128,.3);color:var(--g)}
 .toast.err{border-color:rgba(248,113,113,.3);color:var(--r)}
 .toast.info{border-color:rgba(167,139,250,.3);color:var(--v)}
 
-/* ── EXAMPLES ── */
-.ex-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:1rem;margin-top:3rem}
-.ex-card{background:var(--s2);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:all .3s;cursor:pointer}
-.ex-card:hover{transform:translateY(-4px);border-color:rgba(167,139,250,.25)}
-.ex-thumb{width:100%;aspect-ratio:9/16;max-height:190px;background:var(--s3);display:flex;align-items:center;justify-content:center;font-size:2.5rem;position:relative}
-.ex-thumb::after{content:'';position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.65),transparent)}
-.ex-play{position:absolute;bottom:.5rem;right:.5rem;background:rgba(255,255,255,.12);border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:.65rem;z-index:1}
-.ex-info{padding:.7rem}
-.ex-name{font-size:.75rem;font-weight:700;color:var(--white);margin-bottom:.15rem}
-.ex-views{font-size:.62rem;color:var(--muted)}
-.ex-tag{font-size:.58rem;background:rgba(167,139,250,.08);color:var(--v);border-radius:4px;padding:.08rem .38rem;margin-top:.25rem;display:inline-block}
+/* Modal (full-size image/video viewer) */
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9998;align-items:center;justify-content:center;padding:2rem;backdrop-filter:blur(8px)}
+.modal.show{display:flex}
+.modal-content{max-width:90vw;max-height:90vh;border-radius:14px;overflow:hidden}
+.modal-content img,.modal-content video{max-width:90vw;max-height:90vh;display:block;border-radius:14px}
+.modal-close{position:absolute;top:1.5rem;right:1.5rem;width:36px;height:36px;border-radius:50%;background:var(--s2);border:1px solid var(--border);color:var(--white);cursor:pointer;font-size:1.1rem}
 
-/* ── PRICING ── */
-.price-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1.2rem;margin-top:3.5rem}
-.pc{border:1px solid var(--border);border-radius:16px;padding:1.8rem;background:var(--s1);position:relative;transition:border-color .25s}
-.pc.hot{border-color:rgba(167,139,250,.4);background:linear-gradient(145deg,rgba(167,139,250,.05),transparent)}
-.hot-pill{position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:var(--grad);color:#fff;font-size:.65rem;font-weight:700;padding:.2rem .85rem;border-radius:100px;white-space:nowrap}
-.pc-plan{font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.35rem}
-.pc.hot .pc-plan{color:var(--v)}
-.pc-price{font-family:'Syne',sans-serif;font-size:2.6rem;font-weight:800;color:var(--white);line-height:1}
-.pc-price sub{font-size:.9rem;font-family:'DM Sans',sans-serif;color:var(--muted);font-weight:400;vertical-align:baseline}
-.pc-desc{font-size:.78rem;color:var(--muted);margin:.6rem 0 1.4rem;line-height:1.5}
-.pc-list{list-style:none;display:flex;flex-direction:column;gap:.5rem;margin-bottom:1.8rem}
-.pc-list li{font-size:.8rem;color:var(--white);display:flex;align-items:flex-start;gap:.45rem;line-height:1.4}
-.pc-list li::before{content:'◆';color:var(--v);font-size:.45rem;flex-shrink:0;margin-top:.35rem}
-.pc-list li.dim{color:var(--muted);text-decoration:line-through}
-.pc-list li.dim::before{color:var(--muted)}
-.pc-btn{width:100%;padding:.72rem;border-radius:100px;font-weight:700;font-size:.85rem;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;letter-spacing:.02em}
-.pc-btn.g{background:var(--grad);border:none;color:#fff}
-.pc-btn.g:hover{opacity:.85}
-.pc-btn.o{background:transparent;border:1px solid var(--border);color:var(--white)}
-.pc-btn.o:hover{border-color:rgba(167,139,250,.35)}
-
-/* ── CTA ── */
-.cta{text-align:center;padding:8rem 2rem;position:relative;z-index:1;overflow:hidden}
-.cta-glow{position:absolute;inset:0;background:radial-gradient(ellipse 60% 60% at 50% 50%,rgba(167,139,250,.07),transparent);pointer-events:none}
-.cta-h{font-family:'Syne',sans-serif;font-size:clamp(2.5rem,7vw,5.5rem);font-weight:800;line-height:.92;letter-spacing:-.03em;margin-bottom:1.5rem}
-
-/* ── FOOTER ── */
-footer{border-top:1px solid var(--border);padding:1.8rem 2.5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;color:var(--muted);font-size:.76rem;position:relative;z-index:1}
-footer a{color:var(--muted);text-decoration:none;transition:color .2s}
-footer a:hover{color:var(--white)}
-.footer-links{display:flex;gap:1.5rem}
-
-/* ── LOADING SPINNER ── */
-@keyframes spin{to{transform:rotate(360deg)}}
-.spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
-
-@media(max-width:820px){
-  .studio-shell{grid-template-columns:1fr}
-  .sb{border-right:none;border-bottom:1px solid var(--border)}
-  .chall-grid{grid-template-columns:1fr 1fr}
-  .nav-mid{display:none}
-  .variation-btns{grid-template-columns:1fr 1fr}
+/* Responsive sidebar */
+@media(max-width:780px){
+  .studio.active{grid-template-columns:1fr}
+  .sidebar{position:fixed;left:-260px;width:240px;z-index:100;transition:left .3s;height:100vh}
+  .sidebar.open{left:0}
+  .main{padding:4rem 1.5rem 2rem}
+  .menu-toggle{display:block}
 }
+.menu-toggle{display:none;position:fixed;top:1rem;left:1rem;background:var(--s2);border:1px solid var(--border);color:var(--white);width:36px;height:36px;border-radius:8px;cursor:pointer;z-index:99;font-size:1rem}
+@media(max-width:780px){.menu-toggle{display:flex;align-items:center;justify-content:center}}
 </style>
 </head>
 <body>
+
 <div class="amb amb1"></div>
 <div class="amb amb2"></div>
-<div class="amb amb3"></div>
 <div class="toast" id="toast"></div>
 
-<!-- NAV -->
-<nav>
-  <a class="logo" href="/">CharaMaker</a>
-  <div class="nav-mid">
-    <a onclick="gs('how')">How it works</a>
-    <a onclick="gs('studio')">Studio</a>
-    <a onclick="gs('examples')">Examples</a>
-    <a onclick="gs('pricing')">Pricing</a>
-  </div>
-  <div class="nav-right">
-    <button class="nav-sign">Sign in</button>
-    <button class="nav-start" onclick="gs('studio')">Start Free</button>
-  </div>
-</nav>
+<!-- Modal viewer -->
+<div class="modal" id="modal" onclick="closeModal()">
+  <button class="modal-close" onclick="closeModal()">✕</button>
+  <div class="modal-content" id="modal-content" onclick="event.stopPropagation()"></div>
+</div>
 
-<!-- HERO -->
-<section class="hero">
-  <div class="hero-kicker"><span class="kicker-dot"></span>AI Character Studio · Beta</div>
-  <h1 class="hh">Build Your<br><span class="gr">AI Character.</span><br><span class="gr2">Go Viral.</span></h1>
-  <p class="hero-sub">
-    Create a <b>unique AI character</b>, generate images in any style,<br>
-    and produce <b>trending challenge videos</b> — all in minutes.<br>
-    No camera. No editing. No experience needed.
+<!-- ════════ HOME ════════ -->
+<section class="home" id="home-page">
+  <div class="home-logo">CharaMaker</div>
+  <div class="home-pill">AI Character Studio · Beta</div>
+  <h1 class="home-h1">Build Your <span class="gr">AI Character</span><br>Go Viral.</h1>
+  <p class="home-sub">
+    Create a <b>unique AI persona</b>, generate stunning images,<br>
+    and produce <b>viral challenge videos</b> — no camera, no editing.<br>
+    Lower the barrier to AI content creation.
   </p>
-  <div class="hero-ctas">
-    <button class="btn-grad" onclick="gs('studio')">✦ Create My Character</button>
-    <button class="btn-ghost" onclick="gs('how')">See how it works</button>
-  </div>
-  <div class="char-showcase">
-    <div class="showcase-card">
-      <div class="sc-avi" style="background:linear-gradient(135deg,rgba(167,139,250,.2),rgba(244,114,182,.2))">🧖‍♀️</div>
-      <div class="sc-name">YUNA</div><div class="sc-sub">K-beauty creator</div>
-      <span class="sc-pill pill-v">Realistic</span>
-    </div>
-    <div class="showcase-card">
-      <div class="sc-avi" style="background:linear-gradient(135deg,rgba(34,211,238,.2),rgba(74,222,128,.2))">🧙‍♀️</div>
-      <div class="sc-name">ARIA</div><div class="sc-sub">Fantasy anime</div>
-      <span class="sc-pill pill-p">Anime</span>
-    </div>
-    <div class="showcase-card">
-      <div class="sc-avi" style="background:linear-gradient(135deg,rgba(251,191,36,.2),rgba(244,114,182,.2))">🤖</div>
-      <div class="sc-name">ZERO</div><div class="sc-sub">Cyberpunk</div>
-      <span class="sc-pill pill-c">Anime</span>
-    </div>
-  </div>
-</section>
+  <button class="home-cta" onclick="openStudio()">✦ Create My Character</button>
 
-<!-- HOW IT WORKS -->
-<section class="section" id="how">
-  <div class="cont">
-    <div class="sec-kicker">The Pipeline</div>
-    <h2 class="sec-h">Three steps.<br>Infinite content.</h2>
-    <p class="sec-sub">We connect every AI tool you need into one seamless flow. No accounts, no APIs — just create.</p>
-    <div class="pipe">
-      <div class="pipe-step">
-        <div class="ps-num">01</div>
-        <div class="ps-icon ico-v">🎨</div>
-        <div class="ps-title">Design Your Character</div>
-        <div class="ps-desc">Describe your character in text or use our visual sliders. Choose realistic or anime style, set personality, niche, and vibe.</div>
-      </div>
-      <div class="pipe-step">
-        <div class="ps-num">02</div>
-        <div class="ps-icon ico-p">🖼️</div>
-        <div class="ps-title">Generate Images</div>
-        <div class="ps-desc">Our AI renders your character in stunning quality. Then create unlimited variations — different poses, outfits, expressions.</div>
-      </div>
-      <div class="pipe-step">
-        <div class="ps-num">03</div>
-        <div class="ps-icon ico-c">🎬</div>
-        <div class="ps-title">Make Challenge Videos</div>
-        <div class="ps-desc">Turn any image into a cinematic video. Apply trending challenges automatically or upload a reference to recreate.</div>
-      </div>
-      <div class="pipe-step">
-        <div class="ps-num">04</div>
-        <div class="ps-icon ico-g">📱</div>
-        <div class="ps-title">Post & Grow</div>
-        <div class="ps-desc">Download in TikTok, Reels, and Shorts formats. Optimized aspect ratio, hashtags, and timing strategy included.</div>
-      </div>
+  <div class="home-features">
+    <div class="feat">
+      <div class="feat-icon">🎭</div>
+      <div class="feat-title">Persona Builder</div>
+      <div class="feat-desc">Design a complete character with name, personality, niche, and a face.</div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">🖼️</div>
+      <div class="feat-title">Consistent Images</div>
+      <div class="feat-desc">Generate any scene while keeping your character's face consistent.</div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">🎬</div>
+      <div class="feat-title">Motion Transfer</div>
+      <div class="feat-desc">Upload any video and your character performs that motion perfectly.</div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">📚</div>
+      <div class="feat-title">Studio History</div>
+      <div class="feat-desc">All your characters, images, and videos saved and ready to reuse.</div>
     </div>
   </div>
 </section>
 
-<!-- STUDIO -->
-<section class="section studio-bg" id="studio">
-  <div class="cont">
-    <div class="sec-kicker">Live Studio</div>
-    <h2 class="sec-h">Try it now</h2>
-    <p class="sec-sub">Our AI designs your character and builds ready-to-use image & video prompts in real time. Free.</p>
+<!-- ════════ STUDIO ════════ -->
+<button class="menu-toggle" id="menu-toggle" onclick="toggleSidebar()">☰</button>
+<div class="studio" id="studio-page">
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-logo" onclick="goHome()">CharaMaker</div>
+    <div class="sb-tabs">
+      <button class="sb-tab active" data-tab="character" onclick="setTab('character')">
+        <span class="sb-tab-icon">🎭</span>Create Character
+      </button>
+      <button class="sb-tab" data-tab="image" onclick="setTab('image')">
+        <span class="sb-tab-icon">🖼️</span>Generate Image
+      </button>
+      <button class="sb-tab" data-tab="video" onclick="setTab('video')">
+        <span class="sb-tab-icon">🎬</span>Generate Video
+      </button>
+      <button class="sb-tab" data-tab="history" onclick="setTab('history')">
+        <span class="sb-tab-icon">📚</span>History
+      </button>
+    </div>
+    <div class="sb-bottom">v2 · Powered by Anthropic & fal.ai</div>
+  </aside>
 
-    <div class="studio-shell">
-      <!-- SIDEBAR -->
-      <div class="sb">
-        <!-- Input mode tabs -->
-        <div class="sb-tabs">
-          <button class="sb-tab on" id="iTab-text" onclick="setITab('text')">Text</button>
-          <button class="sb-tab" id="iTab-slider" onclick="setITab('slider')">Sliders</button>
-        </div>
+  <!-- Main content -->
+  <main class="main">
 
-        <!-- Style picker (shared) -->
-        <div class="fld">
-          <div class="fld-label">Character Style</div>
-          <div class="style-pick" id="style-pick">
-            <div class="sp-opt on" data-s="realistic" onclick="setStyle(this,'realistic')">
-              <div class="sp-icon">📸</div><div class="sp-label">Realistic</div><div class="sp-sub">Like a real person</div>
-            </div>
-            <div class="sp-opt" data-s="anime" onclick="setStyle(this,'anime')">
-              <div class="sp-icon">🎌</div><div class="sp-label">Anime</div><div class="sp-sub">Illustrated character</div>
-            </div>
-          </div>
-        </div>
+    <!-- ── CHARACTER TAB ── -->
+    <div class="page active" id="page-character">
+      <h1 class="page-h1">Create Character</h1>
+      <p class="page-sub">Describe your character. Our AI builds a complete persona and generates a profile image.</p>
 
-        <!-- TEXT INPUT -->
-        <div id="panel-text">
+      <div class="row row-2">
+        <!-- Input -->
+        <div class="card">
+          <div class="card-title">📝 Character Details</div>
+
           <div class="fld">
-            <div class="fld-label">Describe your character</div>
-            <textarea id="txt-desc" rows="4" placeholder="e.g. Early 20s Korean woman, short silver hair, bold streetwear, confident gaze, K-pop dancer energy..."></textarea>
+            <label class="fld-label">Name <span style="color:var(--muted);text-transform:none;font-weight:400">(or let AI suggest)</span></label>
+            <input type="text" id="cc-name" placeholder="e.g. Luna, Aria, Zero...">
           </div>
+
           <div class="fld">
-            <div class="fld-label">Niche</div>
-            <div class="chips" id="chips-niche">
-              <div class="chip on" data-v="k-beauty">K-beauty</div>
-              <div class="chip" data-v="fashion">Fashion</div>
-              <div class="chip" data-v="fitness">Fitness</div>
-              <div class="chip" data-v="gaming">Gaming</div>
-              <div class="chip" data-v="food">Food</div>
-              <div class="chip" data-v="fantasy">Fantasy</div>
-              <div class="chip" data-v="cyberpunk">Cyberpunk</div>
-              <div class="chip" data-v="lifestyle">Lifestyle</div>
+            <label class="fld-label">Appearance</label>
+            <textarea id="cc-appearance" rows="3" placeholder="e.g. early 20s Korean woman, shoulder-length silver hair, edgy streetwear, confident expression..."></textarea>
+          </div>
+
+          <div class="fld">
+            <label class="fld-label">Target Niche / Platform</label>
+            <input type="text" id="cc-niche" placeholder="e.g. K-beauty, fitness, gaming, fashion...">
+          </div>
+
+          <div class="fld">
+            <label class="fld-label">Personality</label>
+            <textarea id="cc-persona" rows="2" placeholder="e.g. mysterious and witty, loves coffee, into philosophy..."></textarea>
+          </div>
+
+          <div class="fld">
+            <label class="fld-label">Reference Image <span style="color:var(--muted);text-transform:none;font-weight:400">(optional)</span></label>
+            <div class="upload" id="cc-ref-zone" onclick="document.getElementById('cc-ref-input').click()">
+              <input type="file" id="cc-ref-input" accept="image/*" onchange="handleRefImage(event,'cc')">
+              <div id="cc-ref-display">
+                <div class="upload-icon">🖼️</div>
+                <div class="upload-text">Upload reference style</div>
+                <div class="upload-hint">PNG, JPG · for visual style guidance</div>
+              </div>
             </div>
           </div>
-          <div class="fld">
-            <div class="fld-label">Vibe keywords <span style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></div>
-            <input type="text" id="txt-vibe" placeholder="e.g. mysterious, cute, fierce, dreamy...">
-          </div>
+
+          <button class="btn btn-grad btn-full" id="cc-btn" onclick="createCharacter()">✦ Design My Character</button>
         </div>
 
-        <!-- SLIDER INPUT -->
-        <div id="panel-slider" style="display:none">
-          <div class="fld">
-            <div class="fld-label">Appearance</div>
-            <div class="sl-row"><span class="sl-lbl">Age feel</span><input type="range" min="1" max="10" value="5" id="sl-age" oninput="sv('sl-age','sv-age')"><span class="sl-val" id="sv-age">5</span></div>
-            <div class="sl-row"><span class="sl-lbl">Cute ↔ Alluring</span><input type="range" min="1" max="10" value="5" id="sl-cute" oninput="sv('sl-cute','sv-cute')"><span class="sl-val" id="sv-cute">5</span></div>
-            <div class="sl-row"><span class="sl-lbl">Soft ↔ Intense</span><input type="range" min="1" max="10" value="5" id="sl-int" oninput="sv('sl-int','sv-int')"><span class="sl-val" id="sv-int">5</span></div>
-            <div class="sl-row"><span class="sl-lbl">Casual ↔ Luxury</span><input type="range" min="1" max="10" value="5" id="sl-lux" oninput="sv('sl-lux','sv-lux')"><span class="sl-val" id="sv-lux">5</span></div>
-          </div>
-          <div class="fld">
-            <div class="fld-label">Hair Color</div>
-            <div class="chips" id="chips-hair">
-              <div class="chip on" data-v="black">Black</div>
-              <div class="chip" data-v="brown">Brown</div>
-              <div class="chip" data-v="blonde">Blonde</div>
-              <div class="chip" data-v="silver">Silver</div>
-              <div class="chip" data-v="purple">Purple</div>
-              <div class="chip" data-v="pink">Pink</div>
-              <div class="chip" data-v="white">White</div>
+        <!-- Output -->
+        <div class="card">
+          <div class="card-title">🎭 Your Character</div>
+          <div class="prog" id="cc-prog"><span class="spin"></span><span id="cc-prog-msg">Working...</span></div>
+          <div id="cc-result">
+            <div class="img-preview" id="cc-img-preview" style="margin-bottom:1rem">
+              Profile image will appear here
+            </div>
+            <div id="cc-info" style="display:none"></div>
+            <div id="cc-actions" style="display:none;margin-top:1rem;display:flex;gap:.6rem;flex-wrap:wrap">
+              <button class="btn btn-ghost" onclick="goToImageTab()">→ Generate Image</button>
+              <button class="btn btn-ghost" onclick="goToVideoTab()">→ Generate Video</button>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── IMAGE TAB ── -->
+    <div class="page" id="page-image">
+      <h1 class="page-h1">Generate Image</h1>
+      <p class="page-sub">Pick a saved character profile, then describe a scene or upload a reference image.</p>
+
+      <div class="row row-2">
+        <!-- Input -->
+        <div class="card">
+          <div class="card-title">🎯 Select Profile</div>
+          <div class="profile-grid" id="img-profile-grid"></div>
+
+          <div class="card-title" style="margin-top:1.5rem">📝 Image Settings</div>
           <div class="fld">
-            <div class="fld-label">Setting / World</div>
-            <select id="sl-world">
-              <option>Modern city</option>
-              <option>K-pop stage</option>
-              <option>Fantasy kingdom</option>
-              <option>Cyberpunk city</option>
-              <option>Nature / Serene</option>
-              <option>Luxury fashion</option>
-              <option>Gym / Sports</option>
-            </select>
+            <label class="fld-label">Prompt</label>
+            <textarea id="img-prompt" rows="3" placeholder="e.g. Walking through a neon-lit Tokyo street at night, leather jacket, looking back at the camera..."></textarea>
           </div>
-        </div>
-
-        <button class="gen" id="gen-btn" onclick="designCharacter()">
-          <span id="gen-spinner" style="display:none" class="spinner"></span>
-          <span id="gen-txt">✦ Design My Character</span>
-        </button>
-      </div>
-
-      <!-- MAIN OUTPUT -->
-      <div class="main">
-        <div class="out-tabs">
-          <button class="out-tab on" id="ot-char"    onclick="setOTab('char')">Character</button>
-          <button class="out-tab"    id="ot-image"   onclick="setOTab('image')">Images</button>
-          <button class="out-tab"    id="ot-video"   onclick="setOTab('video')">Video</button>
-          <button class="out-tab"    id="ot-prompts" onclick="setOTab('prompts')">Prompts</button>
-        </div>
-        <div class="prog-wrap" id="prog-wrap"><div class="prog-fill" id="prog-fill"></div></div>
-        <div class="prog-msg" id="prog-msg"></div>
-        <div class="out" id="out-shell">
-          <div class="out-empty" id="out-empty">
-            <div class="big">✦</div>
-            <div style="font-weight:600;color:var(--white)">Your character will appear here</div>
-            <div>Configure on the left and hit "Design My Character"</div>
+          <div class="fld">
+            <label class="fld-label">Reference Image <span style="color:var(--muted);text-transform:none;font-weight:400">(optional)</span></label>
+            <div class="upload" id="img-ref-zone" onclick="document.getElementById('img-ref-input').click()">
+              <input type="file" id="img-ref-input" accept="image/*" onchange="handleRefImage(event,'img')">
+              <div id="img-ref-display">
+                <div class="upload-icon">🖼️</div>
+                <div class="upload-text">Upload reference style</div>
+                <div class="upload-hint">AI will analyze it & extract a prompt</div>
+              </div>
+            </div>
           </div>
-          <div id="out-content" style="display:none;flex-direction:column;flex:1"></div>
+          <button class="btn btn-grad btn-full" id="img-btn" onclick="generateImage()">✦ Generate Image</button>
+        </div>
+
+        <!-- Output -->
+        <div class="card">
+          <div class="card-title">🖼️ Generated Image</div>
+          <div class="prog" id="img-prog"><span class="spin"></span><span id="img-prog-msg">Working...</span></div>
+          <div class="img-preview" id="img-result">Generated image will appear here</div>
+          <button class="btn btn-ghost btn-full" id="img-dl-btn" onclick="downloadImage()" style="margin-top:1rem;display:none">⬇ Download</button>
         </div>
       </div>
     </div>
-  </div>
-</section>
 
-<!-- EXAMPLES -->
-<section class="section" id="examples">
-  <div class="cont">
-    <div class="sec-kicker">Trending Now</div>
-    <h2 class="sec-h">What people are<br>making with CharaMaker</h2>
-    <p class="sec-sub">These viral formats are getting millions of views. Your AI character can do all of them.</p>
-    <div class="ex-grid">
-      <div class="ex-card"><div class="ex-thumb">🧖‍♀️<div class="ex-play">▶</div></div><div class="ex-info"><div class="ex-name">K-beauty Routine</div><div class="ex-views">avg 2.3M views</div><div class="ex-tag">GRWM Challenge</div></div></div>
-      <div class="ex-card"><div class="ex-thumb">💃<div class="ex-play">▶</div></div><div class="ex-info"><div class="ex-name">Dance Challenge</div><div class="ex-views">avg 5.1M views</div><div class="ex-tag">#trending</div></div></div>
-      <div class="ex-card"><div class="ex-thumb">🧙‍♀️<div class="ex-play">▶</div></div><div class="ex-info"><div class="ex-name">Fantasy Reveal</div><div class="ex-views">avg 1.8M views</div><div class="ex-tag">Transformation</div></div></div>
-      <div class="ex-card"><div class="ex-thumb">🤖<div class="ex-play">▶</div></div><div class="ex-info"><div class="ex-name">AI Character Drop</div><div class="ex-views">avg 3.4M views</div><div class="ex-tag">POV Style</div></div></div>
-      <div class="ex-card"><div class="ex-thumb">👗<div class="ex-play">▶</div></div><div class="ex-info"><div class="ex-name">Outfit Check</div><div class="ex-views">avg 1.2M views</div><div class="ex-tag">Fashion Haul</div></div></div>
-      <div class="ex-card"><div class="ex-thumb">🌸<div class="ex-play">▶</div></div><div class="ex-info"><div class="ex-name">Aesthetic Vlog</div><div class="ex-views">avg 900K views</div><div class="ex-tag">Day-in-my-life</div></div></div>
-    </div>
-  </div>
-</section>
+    <!-- ── VIDEO TAB ── -->
+    <div class="page" id="page-video">
+      <h1 class="page-h1">Generate Video</h1>
+      <p class="page-sub">Pick a profile and upload a reference video. Your character will perform that motion.</p>
 
-<!-- PRICING -->
-<section class="section" id="pricing">
-  <div class="cont">
-    <div class="sec-kicker">Pricing</div>
-    <h2 class="sec-h">Start free.<br>Scale when ready.</h2>
-    <div class="price-grid">
-      <div class="pc">
-        <div class="pc-plan">Starter</div>
-        <div class="pc-price">$0<sub>/mo</sub></div>
-        <div class="pc-desc">Try CharaMaker and see what your AI character can do.</div>
-        <ul class="pc-list">
-          <li>10 character designs / month</li>
-          <li>Realistic + anime styles</li>
-          <li>Full prompt export</li>
-          <li>Challenge strategy</li>
-          <li class="dim">Image generation</li>
-          <li class="dim">Video generation</li>
-        </ul>
-        <button class="pc-btn o" onclick="gs('studio')">Get Started Free</button>
-      </div>
-      <div class="pc hot">
-        <div class="hot-pill">🔥 Most Popular</div>
-        <div class="pc-plan">Creator</div>
-        <div class="pc-price">$19<sub>/mo</sub></div>
-        <div class="pc-desc">Everything you need to build and grow your AI influencer.</div>
-        <ul class="pc-list">
-          <li>Unlimited character designs</li>
-          <li>50 AI images / month</li>
-          <li>20 videos / month (5-10s)</li>
-          <li>Variation engine (pose, outfit, mood)</li>
-          <li>Trending challenge detector</li>
-          <li>9:16 / 1:1 download formats</li>
-        </ul>
-        <button class="pc-btn g">Start Creator Plan</button>
-      </div>
-      <div class="pc">
-        <div class="pc-plan">Pro</div>
-        <div class="pc-price">$49<sub>/mo</sub></div>
-        <div class="pc-desc">For serious creators, brands, and agencies scaling fast.</div>
-        <ul class="pc-list">
-          <li>Everything unlimited</li>
-          <li>300 AI images / month</li>
-          <li>100 videos / month</li>
-          <li>Multi-character management</li>
-          <li>API access</li>
-          <li>Priority support</li>
-        </ul>
-        <button class="pc-btn o">Contact Us</button>
+      <div class="row row-2">
+        <!-- Input -->
+        <div class="card">
+          <div class="card-title">🎯 Select Profile</div>
+          <div class="profile-grid" id="vid-profile-grid"></div>
+
+          <div class="card-title" style="margin-top:1.5rem">📹 Reference Video</div>
+          <div class="upload" id="vid-ref-zone" onclick="document.getElementById('vid-ref-input').click()">
+            <input type="file" id="vid-ref-input" accept="video/*" onchange="handleRefVideo(event)">
+            <div id="vid-ref-display">
+              <div class="upload-icon">🎬</div>
+              <div class="upload-text">Upload reference motion video</div>
+              <div class="upload-hint">MP4, MOV · person facing camera works best</div>
+            </div>
+          </div>
+
+          <button class="btn btn-grad btn-full" id="vid-btn" onclick="generateVideo()" style="margin-top:1rem">✦ Generate Video</button>
+        </div>
+
+        <!-- Output -->
+        <div class="card">
+          <div class="card-title">🎬 Generated Video</div>
+          <div class="prog" id="vid-prog"><span class="spin"></span><span id="vid-prog-msg">Working...</span></div>
+          <div class="vid-preview" id="vid-result">Generated video will appear here</div>
+          <button class="btn btn-ghost btn-full" id="vid-dl-btn" onclick="downloadVideo()" style="margin-top:1rem;display:none">⬇ Download</button>
+        </div>
       </div>
     </div>
-  </div>
-</section>
 
-<!-- CTA -->
-<section class="cta">
-  <div class="cta-glow"></div>
-  <div class="cont" style="position:relative;z-index:1">
-    <h2 class="cta-h">Your character<br><span style="background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent">is waiting</span><br>for you.</h2>
-    <p style="color:var(--muted);margin-bottom:2.5rem;font-size:.93rem">No credit card · Free forever plan · Built for creators worldwide</p>
-    <button class="btn-grad" style="font-size:.95rem;padding:.9rem 2.5rem" onclick="gs('studio')">✦ Create My Character Free</button>
-  </div>
-</section>
+    <!-- ── HISTORY TAB ── -->
+    <div class="page" id="page-history">
+      <h1 class="page-h1">History</h1>
+      <p class="page-sub">All your created characters, images, and videos.</p>
 
-<footer>
-  <div>© 2026 CharaMaker Inc.</div>
-  <div class="footer-links">
-    <a href="#">Terms</a><a href="#">Privacy</a><a href="#">Contact</a><a href="#">Blog</a>
-  </div>
-</footer>
+      <div class="history-section">
+        <div class="history-h">🎭 Characters</div>
+        <div class="history-grid" id="hist-characters"></div>
+      </div>
+
+      <div class="history-section">
+        <div class="history-h">🖼️ Images</div>
+        <div class="history-grid" id="hist-images"></div>
+      </div>
+
+      <div class="history-section">
+        <div class="history-h">🎬 Videos</div>
+        <div class="history-grid" id="hist-videos"></div>
+      </div>
+    </div>
+  </main>
+</div>
 
 <script>
-// ── CONFIG ──
-const API = 'https://charamaker-api.jjinbee614.workers.dev'; // Cloudflare Worker URL
-// For local dev: const API = 'http://localhost:8787';
+// ═══════════════════════════════════════════════════════════
+// CONFIG — REPLACE THESE 3 VALUES BEFORE DEPLOY
+// ═══════════════════════════════════════════════════════════
+const API = 'https://charamaker-api.jjinbee614.workers.dev';
+const SUPABASE_URL = 'YOUR_SUPABASE_URL';      // e.g. https://xxxxx.supabase.co
+const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY'; // public anon key
 
-// ── STATE ──
+const supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ═══════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════
 const S = {
-  iTab: 'text',
-  oTab: 'char',
-  charStyle: 'realistic',
-  result: null,
-  profileImageUrl: null,   // permanent face reference
-  imageUrl: null,          // currently displayed image
-  referenceVideoUrl: null,
-  videoUrl: null,
-  swappedImageUrl: null,
-  selectedChallenge: 'trending',
+  tab: 'character',
+  characters: [],   // all loaded characters
+  ccCharacter: null,    // currently designed character (not yet saved)
+  ccRefImageUrl: null,  // reference for character creation
+  imgRefImageUrl: null, // reference for image generation
+  imgRefImageDataUrl: null, // base64 for analysis
+  vidRefVideoUrl: null,
+  imgSelectedProfileId: null,
+  vidSelectedProfileId: null,
+  lastImage: null,
+  lastVideo: null,
 };
 
-// ── UTILS ──
-function gs(id){document.getElementById(id)?.scrollIntoView({behavior:'smooth'})}
-let toastTimer;
-function toast(msg,type='ok'){
-  const el=document.getElementById('toast');
-  el.textContent=msg; el.className=`toast ${type} show`;
-  clearTimeout(toastTimer);
-  toastTimer=setTimeout(()=>el.classList.remove('show'),3500);
-}
-function copyText(t){
-  navigator.clipboard.writeText(t).then(()=>toast('Copied to clipboard ✓'));
+// ═══════════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════════
+let toastT;
+function toast(msg, type='ok') {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.className = `toast ${type} show`;
+  clearTimeout(toastT);
+  toastT = setTimeout(() => el.classList.remove('show'), 3500);
 }
 
-// ── TABS ──
-function setITab(t){
-  S.iTab=t;
-  document.getElementById('panel-text').style.display=t==='text'?'block':'none';
-  document.getElementById('panel-slider').style.display=t==='slider'?'block':'none';
-  document.getElementById('iTab-text').classList.toggle('on',t==='text');
-  document.getElementById('iTab-slider').classList.toggle('on',t==='slider');
+function progShow(id, msg) {
+  document.getElementById(`${id}-prog`).classList.add('show');
+  document.getElementById(`${id}-prog-msg`).textContent = msg;
 }
-function setOTab(t){
-  S.oTab=t;
-  ['char','image','video','prompts'].forEach(id=>{
-    document.getElementById(`ot-${id}`).classList.toggle('on',id===t);
-  });
-  if(S.result) renderOutput();
-}
-function setStyle(el,s){
-  document.querySelectorAll('#style-pick .sp-opt').forEach(x=>x.classList.remove('on'));
-  el.classList.add('on'); S.charStyle=s;
-}
-function sv(id,vid){document.getElementById(vid).textContent=document.getElementById(id).value}
-
-// chip groups
-document.querySelectorAll('.chips').forEach(row=>{
-  row.addEventListener('click',e=>{
-    const chip=e.target.closest('.chip'); if(!chip) return;
-    row.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
-    chip.classList.add('on');
-  });
-});
-
-// ── PROGRESS ──
-let progInt;
-function progStart(msg='Working...'){
-  const pw=document.getElementById('prog-wrap'),pf=document.getElementById('prog-fill'),pm=document.getElementById('prog-msg');
-  pw.style.display='block'; pm.style.display='block'; pm.textContent=msg;
-  pf.style.width='0%'; let w=0;
-  progInt=setInterval(()=>{w=Math.min(88,w+Math.random()*10);pf.style.width=w+'%'},400);
-}
-function progStop(){
-  clearInterval(progInt);
-  document.getElementById('prog-fill').style.width='100%';
-  setTimeout(()=>{
-    document.getElementById('prog-wrap').style.display='none';
-    document.getElementById('prog-msg').style.display='none';
-  },500);
+function progHide(id) {
+  document.getElementById(`${id}-prog`).classList.remove('show');
 }
 
-// ── DESIGN CHARACTER (Claude via Worker) ──
-async function designCharacter(){
-  const btn=document.getElementById('gen-btn');
-  const sp=document.getElementById('gen-spinner');
-  const gt=document.getElementById('gen-txt');
-  btn.disabled=true; sp.style.display='inline-block'; gt.textContent='Designing...';
+function openModal(html) {
+  document.getElementById('modal-content').innerHTML = html;
+  document.getElementById('modal').classList.add('show');
+}
+function closeModal() {
+  document.getElementById('modal').classList.remove('show');
+}
 
-  document.getElementById('out-empty').style.display='none';
-  document.getElementById('out-content').style.display='flex';
-  document.getElementById('out-content').innerHTML='';
-  progStart('Designing your character...');
+// ═══════════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════════
+function openStudio() {
+  document.getElementById('home-page').classList.add('hidden');
+  document.getElementById('studio-page').classList.add('active');
+  loadCharacters();
+}
+function goHome() {
+  document.getElementById('studio-page').classList.remove('active');
+  document.getElementById('home-page').classList.remove('hidden');
+}
+function setTab(tab) {
+  S.tab = tab;
+  document.querySelectorAll('.sb-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(`page-${tab}`).classList.add('active');
+  if (tab === 'image') renderProfileGrid('img');
+  if (tab === 'video') renderProfileGrid('vid');
+  if (tab === 'history') loadHistory();
+  if (window.innerWidth < 780) document.getElementById('sidebar').classList.remove('open');
+}
+function goToImageTab() {
+  if (S.ccCharacter?.id) S.imgSelectedProfileId = S.ccCharacter.id;
+  setTab('image');
+}
+function goToVideoTab() {
+  if (S.ccCharacter?.id) S.vidSelectedProfileId = S.ccCharacter.id;
+  setTab('video');
+}
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+}
 
-  let body={char_style:S.charStyle};
-  if(S.iTab==='text'){
-    body.mode='text';
-    body.text_desc=document.getElementById('txt-desc').value||'';
-    body.niche=document.querySelector('#chips-niche .chip.on')?.dataset.v||'lifestyle';
-    body.vibe=document.getElementById('txt-vibe').value||'';
-  } else {
-    body.mode='slider';
-    body.sliders={
-      age:document.getElementById('sl-age').value,
-      cute:document.getElementById('sl-cute').value,
-      intense:document.getElementById('sl-int').value,
-      luxury:document.getElementById('sl-lux').value,
-      hair:document.querySelector('#chips-hair .chip.on')?.dataset.v||'black',
-      world:document.getElementById('sl-world').value,
-    };
-    body.niche='lifestyle';
+// ═══════════════════════════════════════════════════════════
+// REFERENCE FILE UPLOADS
+// ═══════════════════════════════════════════════════════════
+async function handleRefImage(event, prefix) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  toast('Uploading reference image...', 'info');
+
+  // For img tab, also keep base64 for Claude analysis later
+  if (prefix === 'img') {
+    const reader = new FileReader();
+    reader.onload = e => { S.imgRefImageDataUrl = e.target.result; };
+    reader.readAsDataURL(file);
   }
 
   try {
-    const res=await fetch(`${API}/api/design`,{
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify(body)
-    });
-    const data=await res.json();
-    progStop();
-    if(!data.ok) throw new Error(data.error||'Design failed');
-    S.result=data.character;
-    S.imageUrl=null; S.videoUrl=null; S.referenceVideoUrl=null;
-    S.oTab='char';
-    renderOutput();
-    // Auto-generate profile image after character design
-    autoGenerateProfile();
-  } catch(e){
-    progStop();
-    document.getElementById('out-content').innerHTML=`<div style="padding:2rem;text-align:center;color:var(--muted)">⚠️ ${e.message||'Something went wrong. Please try again.'}</div>`;
-  }
-  btn.disabled=false; sp.style.display='none'; gt.textContent='✦ Design My Character';
+    const fd = new FormData(); fd.append('file', file);
+    const res = await fetch(`${API}/api/upload`, { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'upload failed');
+
+    if (prefix === 'cc') S.ccRefImageUrl = data.url;
+    if (prefix === 'img') S.imgRefImageUrl = data.url;
+
+    document.getElementById(`${prefix}-ref-zone`).classList.add('has-file');
+    document.getElementById(`${prefix}-ref-display`).innerHTML = `
+      <div class="upload-text">✓ Reference uploaded</div>
+      <div class="upload-hint">Click to change</div>
+    `;
+    toast('Reference ready ✓');
+  } catch (e) { toast('Upload failed', 'err'); }
 }
 
-// ── AUTO PROFILE IMAGE GENERATION ──
-async function autoGenerateProfile(){
-  if(!S.result?.profile_image_prompt) return;
-  progStart('Generating profile image...');
+async function handleRefVideo(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  if (file.size > 100 * 1024 * 1024) { toast('File too large. Max 100MB.', 'err'); return; }
+  toast('Uploading video...', 'info');
+
   try {
-    const res=await fetch(`${API}/api/profile`,{
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ prompt: S.result.profile_image_prompt })
-    });
-    const data=await res.json();
-    if(!data.ok) throw new Error(data.error||'Profile image failed');
-    const url=await pollJob('profile', data.request_id, 'Rendering your character face...');
-    S.imageUrl=url;
-    S.profileImageUrl=url; // store as permanent profile reference
-    progStop();
-    toast('Profile image ready! ✓');
-    setOTab('image');
-    renderOutput();
-  } catch(e){
-    progStop();
-    toast('Profile image failed — you can retry in Images tab','err');
-  }
+    const fd = new FormData(); fd.append('file', file);
+    const res = await fetch(`${API}/api/upload`, { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'upload failed');
+
+    S.vidRefVideoUrl = data.url;
+    document.getElementById('vid-ref-zone').classList.add('has-file');
+    document.getElementById('vid-ref-display').innerHTML = `
+      <div class="upload-text">✓ Video uploaded</div>
+      <div class="upload-hint">Click to change</div>
+    `;
+    toast('Video ready ✓');
+  } catch (e) { toast('Upload failed', 'err'); }
 }
 
-// ── RENDER OUTPUT ──
-function renderOutput(){
-  const r=S.result; if(!r) return;
-  const oc=document.getElementById('out-content');
-  oc.style.display='flex'; oc.innerHTML='';
+// ═══════════════════════════════════════════════════════════
+// 1. CREATE CHARACTER
+// ═══════════════════════════════════════════════════════════
+async function createCharacter() {
+  const name = document.getElementById('cc-name').value.trim();
+  const appearance = document.getElementById('cc-appearance').value.trim();
+  const niche = document.getElementById('cc-niche').value.trim();
+  const persona = document.getElementById('cc-persona').value.trim();
 
-  const hdr=`<div class="out-hdr">
-    <div class="out-hdr-name">${r.emoji} ${r.name}</div>
-    <div class="hdr-btns">
-      <button class="hdr-btn" onclick="copyText(JSON.stringify(S.result,null,2))">Export JSON</button>
-      <button class="hdr-btn" onclick="toast('Character saved! ✓')">Save</button>
-    </div>
-  </div>`;
-
-  let body='';
-  if(S.oTab==='char'){
-    body=`<div class="out-body">
-      <div class="char-card">
-        <div class="char-avi">${r.emoji}</div>
-        <div class="char-info">
-          <div class="char-name">${r.name}</div>
-          <div class="char-tagline">${r.tagline}</div>
-          <div class="char-story">${r.backstory}</div>
-          <div class="char-tags-row">
-            ${(r.niche_tags||[]).map((t,i)=>`<span class="ctag ${['ctag-v','ctag-p','ctag-c'][i%3]}">${t}</span>`).join('')}
-          </div>
-        </div>
-      </div>
-      <div class="tip-box">
-        <div class="tip-label">💡 Growth Tip</div>
-        <div class="tip-text">${r.growth_tip}</div>
-      </div>
-      <div style="margin-top:1rem;display:flex;gap:.6rem;flex-wrap:wrap">
-        <button class="hdr-btn" onclick="setOTab('image');renderOutput()">→ Generate Images</button>
-        <button class="hdr-btn" onclick="setOTab('video');renderOutput()">→ Make Video</button>
-        <button class="hdr-btn" onclick="setOTab('prompts');renderOutput()">→ View Prompts</button>
-      </div>
-    </div>`;
-
-  } else if(S.oTab==='image'){
-    const hasImg=!!S.imageUrl;
-    body=`<div class="out-body">
-      <div class="img-panel">
-        <div class="img-stage" id="img-stage">
-          ${hasImg
-            ? `<img src="${S.imageUrl}" alt="${r.name}" />`
-            : `<div class="img-placeholder"><span>🖼️</span><span>Generate your first image</span></div>`}
-        </div>
-        <button class="img-gen-btn" id="img-gen-btn" onclick="generateImage()" ${!S.result?'disabled':''}>
-          ${hasImg ? '✦ Regenerate Profile Image' : '✦ Generate Profile Image'}
-        </button>
-        ${hasImg ? `
-        <div style="font-size:.72rem;color:var(--muted);font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-top:.5rem">Create Variations</div>
-        <div class="variation-btns" style="grid-template-columns:repeat(2,1fr)">
-          <button class="var-btn" onclick="generateVariation('pose')"   ${!hasImg?'disabled':''}>📸 New Pose</button>
-          <button class="var-btn" onclick="generateVariation('outfit')" ${!hasImg?'disabled':''}>👗 New Outfit</button>
-          <button class="var-btn" onclick="generateVariation('mood')"   ${!hasImg?'disabled':''}>🌅 New Mood</button>
-          <button class="var-btn" onclick="generateVariation('action')" ${!hasImg?'disabled':''}>⚡ Action Shot</button>
-        </div>
-        <button class="dl-btn" onclick="downloadImage()">⬇ Download Image</button>` : ''}
-      </div>
-    </div>`;
-
-  } else if(S.oTab==='video'){
-    const ch=r.challenges||{};
-    const challArr=[
-      {key:'trending',icon:'🔥',name:'Trending Challenge',data:ch.trending},
-      {key:'dance',icon:'💃',name:'Dance Challenge',data:ch.dance},
-      {key:'transformation',icon:'✨',name:'Transformation',data:ch.transformation},
-    ];
-    const sel=S.selectedChallenge;
-    const selData=ch[sel]||{};
-    const hasImg=!!S.imageUrl;
-    const hasVid=!!S.videoUrl;
-    const hasRefVid=!!S.referenceVideoUrl;
-
-    body=`<div class="out-body">
-      <div class="chall-grid">
-        ${challArr.map(c=>`
-          <div class="chall ${c.key===sel?'on':''}" onclick="selectChallenge('${c.key}')">
-            <div class="chall-icon">${c.icon}</div>
-            <div class="chall-name">${c.name}</div>
-            <div class="chall-sub">${c.data?.name||''}</div>
-            <div class="chall-hot">${c.data?.description||''}</div>
-          </div>`).join('')}
-      </div>
-
-      ${selData.reference_tip ? `
-      <div style="background:rgba(34,211,238,.06);border-radius:8px;padding:.85rem;border-left:2px solid var(--c);margin-bottom:.8rem">
-        <div style="font-size:.6rem;font-weight:700;color:var(--c);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.35rem">💡 Recommended Reference Video</div>
-        <div style="font-size:.8rem;color:var(--white);line-height:1.5">${selData.reference_tip}</div>
-      </div>` : ''}
-
-      <div style="font-size:.68rem;font-weight:700;color:var(--muted);letter-spacing:.07em;text-transform:uppercase;margin-bottom:.5rem">
-        Step 1 — Upload Reference Video
-      </div>
-      <div class="upload-zone" id="ref-upload-zone" onclick="document.getElementById('ref-video-input').click()">
-        <input type="file" id="ref-video-input" accept="video/*" style="display:none" onchange="handleRefVideoUpload(event)">
-        ${hasRefVid
-          ? `<div style="color:var(--g);font-weight:700;font-size:.85rem">✓ Reference video ready</div>
-             <div style="font-size:.72rem;color:var(--muted);margin-top:.3rem">Click to change</div>`
-          : `<div style="font-size:1.4rem;margin-bottom:.4rem;opacity:.4">📹</div>
-             <div style="font-size:.82rem;color:var(--muted)">Upload a reference motion video</div>
-             <div style="font-size:.7rem;color:var(--muted);margin-top:.2rem">MP4, MOV · Character should face camera</div>`}
-      </div>
-
-      ${hasVid
-        ? `<div class="vid-stage" style="margin-top:.8rem"><video src="${S.videoUrl}" controls loop playsinline></video></div>
-           <button class="dl-btn" style="margin-top:.6rem" onclick="downloadVideo()">⬇ Download Video</button>`
-        : `<div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.5rem">
-            ${(selData.hashtags||[]).map(h=>`<span class="ctag ctag-v">#${h}</span>`).join('')}
-           </div>`}
-
-      <div style="font-size:.7rem;color:var(--muted);line-height:1.5;margin-top:.6rem">
-        ${!hasImg ? '⚠ Generate a character image first.' : !hasRefVid ? 'Upload a reference video, then generate.' : 'Ready! Our AI will apply the motion to your character.'}
-      </div>
-      <button class="vid-gen-btn" id="vid-gen-btn" onclick="generateVideo()" ${(!hasImg||!hasRefVid)?'disabled':''}>
-        ${!hasImg ? '⚠ Generate image first' : !hasRefVid ? '⚠ Upload reference video first' : '✦ Apply Motion to My Character'}
-      </button>
-    </div>`;
-
-  } else {
-    // PROMPTS tab
-    body=`<div class="out-body">
-      <div style="margin-bottom:1.2rem">
-        <div class="tip-label" style="color:var(--v)">Image Generation Prompt</div>
-        <div style="background:var(--s2);border-radius:8px;padding:.9rem;font-size:.76rem;color:var(--white);line-height:1.65;border-left:2px solid var(--v);word-break:break-word;margin-top:.4rem">${r.image_prompt||''}</div>
-        <button class="hdr-btn" style="margin-top:.5rem" onclick="copyText(\`${(r.image_prompt||'').replace(/`/g,'\\`')}\`)">Copy Prompt</button>
-      </div>
-      <div style="margin-bottom:1.2rem">
-        <div class="tip-label" style="color:var(--p)">Variation Prompt</div>
-        <div style="background:var(--s2);border-radius:8px;padding:.9rem;font-size:.76rem;color:var(--white);line-height:1.65;border-left:2px solid var(--p);word-break:break-word;margin-top:.4rem">${r.image_prompt_variation||''}</div>
-        <button class="hdr-btn" style="margin-top:.5rem" onclick="copyText(\`${(r.image_prompt_variation||'').replace(/`/g,'\\`')}\`)">Copy Prompt</button>
-      </div>
-      ${['trending','reference','template'].map(k=>`
-        <div style="margin-bottom:1.2rem">
-          <div class="tip-label" style="color:var(--c)">${k.charAt(0).toUpperCase()+k.slice(1)} — Video Motion Prompt</div>
-          <div style="background:var(--s2);border-radius:8px;padding:.9rem;font-size:.76rem;color:var(--white);line-height:1.65;border-left:2px solid var(--c);word-break:break-word;margin-top:.4rem">${(r.challenges?.[k]?.motion_prompt)||''}</div>
-          <button class="hdr-btn" style="margin-top:.5rem" onclick="copyText(\`${((r.challenges?.[k]?.motion_prompt)||'').replace(/`/g,'\\`')}\`)">Copy Prompt</button>
-        </div>`).join('')}
-      <div style="background:rgba(167,139,250,.06);border-radius:8px;padding:.85rem;font-size:.74rem;color:var(--muted);line-height:1.55">
-        💡 <b style="color:var(--white)">Image prompt</b> → paste into any image generator.<br>
-        💡 <b style="color:var(--white)">Motion prompt</b> → use with any video AI tool for Image-to-Video.
-      </div>
-    </div>`;
+  if (!appearance && !persona && !name) {
+    toast('Please describe your character first', 'err');
+    return;
   }
 
-  oc.innerHTML=hdr+body;
-}
+  const btn = document.getElementById('cc-btn');
+  btn.disabled = true; btn.textContent = 'Designing...';
+  progShow('cc', 'Designing character profile...');
 
-// ── PROFILE IMAGE — retry/regenerate via nano-banana-2 ──
-async function generateImage(){
-  if(!S.result) return;
-  const btn=document.getElementById('img-gen-btn');
-  btn.disabled=true; btn.textContent='Generating...';
-  progStart('Creating your character profile image...');
   try {
-    const res=await fetch(`${API}/api/profile`,{
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ prompt: S.result.profile_image_prompt })
+    // Step 1: Claude builds the persona
+    const designRes = await fetch(`${API}/api/character`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, appearance, niche, persona, reference_image_url: S.ccRefImageUrl })
     });
-    const data=await res.json();
-    if(!data.ok) throw new Error(data.error||'submit failed');
-    const url=await pollJob('profile', data.request_id, 'Rendering your character face...');
-    S.imageUrl=url;
-    progStop(); toast('Profile image ready! ✓');
-    renderOutput();
-  } catch(e){ progStop(); toast(e.message||'Image generation failed','err'); }
-  btn.disabled=false; btn.textContent= S.imageUrl ? '✦ Regenerate Profile' : '✦ Generate Profile Image';
-}
+    const design = await designRes.json();
+    if (!design.ok) throw new Error(design.error || 'design failed');
+    const character = design.character;
 
-// ── SITUATIONAL IMAGE → Worker /api/variate → wan/v2.7/pro/edit (profile as reference) ──
-async function generateVariation(type){
-  if(!S.imageUrl||!S.result) return;
-  const vp=S.result.variation_prompts||{};
-  const promptMap={
-    pose:   vp.pose   || 'Keep the same person, change pose to a dynamic confident stance.',
-    outfit: vp.outfit || 'Keep the same person, change outfit to a new stylish look.',
-    mood:   vp.mood   || 'Keep the same person, change the mood and lighting to golden hour.',
-    action: vp.action || 'Keep the same person, show them in an engaging action shot.',
-  };
-  const prompt=promptMap[type]||`Keep the same person, change ${type}.`;
-  const btns=document.querySelectorAll('.var-btn');
-  btns.forEach(b=>b.disabled=true);
-  progStart(`Generating ${type} image...`);
-  try {
-    // Always use the base profile image as reference (not a variation)
-    const profileRef = S.profileImageUrl || S.imageUrl;
-    const res=await fetch(`${API}/api/variate`,{
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ profile_image_url: profileRef, prompt })
+    // Step 2: Generate profile image
+    progShow('cc', 'Generating profile image (1-2 min)...');
+    const imgRes = await fetch(`${API}/api/character/image`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: character.image_prompt })
     });
-    const data=await res.json();
-    if(!data.ok) throw new Error(data.error||'submit failed');
-    const url=await pollJob('variate', data.request_id, `Generating ${type} image...`);
-    S.imageUrl=url;
-    progStop(); toast(`${type} image ready! ✓`);
-    renderOutput();
-  } catch(e){ progStop(); toast(e.message||'Image generation failed','err'); }
-  btns.forEach(b=>b.disabled=false);
-}
+    const imgData = await imgRes.json();
+    if (!imgData.ok) throw new Error('image submit failed');
 
-// ── REFERENCE VIDEO UPLOAD → Worker /api/upload → fal.ai storage ──
-async function handleRefVideoUpload(event){
-  const file=event.target.files?.[0]; if(!file) return;
-  // File size check (max 50MB)
-  if(file.size > 50 * 1024 * 1024){
-    toast('File too large. Max 50MB.','err'); return;
+    const imageUrl = await pollJob(imgData.model, imgData.request_id, 'cc', 'Rendering character face...');
+
+    // Step 3: Save to Supabase
+    progShow('cc', 'Saving to your library...');
+    const { data: saved, error } = await supa.from('characters').insert({
+      name: character.name,
+      persona: character.persona,
+      niche: character.niche,
+      appearance: character.appearance,
+      image_url: imageUrl,
+      image_prompt: character.image_prompt,
+      reference_image_url: S.ccRefImageUrl,
+    }).select().single();
+
+    if (error) throw new Error('DB save failed: ' + error.message);
+
+    S.ccCharacter = saved;
+    progHide('cc');
+    renderCharacterResult(saved);
+    toast(`${saved.name} created! ✓`);
+    await loadCharacters();
+  } catch (e) {
+    progHide('cc');
+    toast(e.message || 'Failed', 'err');
   }
-  toast('Uploading reference video...','info');
-  progStart('Uploading your reference video...');
-  try {
-    const formData=new FormData();
-    formData.append('file', file);
-    const res=await fetch(`${API}/api/upload`,{
-      method:'POST',
-      body: formData
-      // No Content-Type header — browser sets it with boundary for multipart
-    });
-    if(!res.ok) throw new Error(`Upload failed: ${res.status}`);
-    const data=await res.json();
-    if(!data.ok) throw new Error(data.error||'Upload failed');
-    S.referenceVideoUrl=data.url;
-    progStop(); toast('Reference video ready ✓');
-    renderOutput();
-  } catch(e){ progStop(); toast(e.message||'Upload failed','err'); }
+  btn.disabled = false; btn.textContent = '✦ Design My Character';
 }
 
-// ── VIDEO → Worker /api/video → Full pipeline (frame extract → person swap → Kling) ──
-async function generateVideo(){
-  if(!S.imageUrl||!S.referenceVideoUrl) return;
-  const btn=document.getElementById('vid-gen-btn');
-  btn.disabled=true; btn.textContent='Processing...';
+function renderCharacterResult(c) {
+  document.getElementById('cc-img-preview').innerHTML = `<img src="${c.image_url}" alt="${c.name}" onclick="openModal('<img src=\\'${c.image_url}\\'>')">`;
+  document.getElementById('cc-info').style.display = 'block';
+  document.getElementById('cc-info').innerHTML = `
+    <div style="font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:800;color:var(--white)">${c.name}</div>
+    <div style="font-size:.75rem;color:var(--v);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin:.3rem 0">${c.niche || ''}</div>
+    <div style="font-size:.85rem;color:var(--muted);line-height:1.55;margin-top:.4rem">${c.persona || ''}</div>
+  `;
+  document.getElementById('cc-actions').style.display = 'flex';
+}
+
+// ═══════════════════════════════════════════════════════════
+// 2. GENERATE IMAGE
+// ═══════════════════════════════════════════════════════════
+async function generateImage() {
+  if (!S.imgSelectedProfileId) { toast('Select a profile first', 'err'); return; }
+  let prompt = document.getElementById('img-prompt').value.trim();
+
+  // If reference image uploaded, ask Claude to extract a prompt from it
+  if (S.imgRefImageUrl && !prompt) {
+    progShow('img', 'Analyzing reference image...');
+    try {
+      const aRes = await fetch(`${API}/api/image/analyze`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image_url: S.imgRefImageUrl })
+      });
+      const a = await aRes.json();
+      if (a.ok && a.prompt) prompt = a.prompt;
+    } catch {}
+  }
+
+  if (!prompt) { progHide('img'); toast('Add a prompt or reference image', 'err'); return; }
+
+  const profile = S.characters.find(c => c.id === S.imgSelectedProfileId);
+  if (!profile) { toast('Profile not found', 'err'); return; }
+
+  const btn = document.getElementById('img-btn');
+  btn.disabled = true; btn.textContent = 'Generating...';
+  progShow('img', 'Generating image (1-2 min)...');
 
   try {
-    // Step 1+2 run in Worker backend, we just show progress messages
-    progStart('Analyzing reference video...');
-    const res=await fetch(`${API}/api/video`,{
-      method:'POST', headers:{'Content-Type':'application/json'},
+    const res = await fetch(`${API}/api/image/generate`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        profile_image_url: S.imageUrl,
-        video_url: S.referenceVideoUrl,
+        profile_image_url: profile.image_url,
+        prompt,
+        reference_image_url: S.imgRefImageUrl,
       })
     });
-    const data=await res.json();
-    if(!data.ok) throw new Error(data.error||'submit failed');
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'submit failed');
 
-    // Show swapped frame preview if returned
-    if(data.swapped_image_url){
-      S.swappedImageUrl=data.swapped_image_url;
-    }
+    const url = await pollJob(data.model, data.request_id, 'img', 'Rendering image...');
 
-    // Step 3: Poll Kling job
-    const url=await pollJob('video', data.request_id, 'Generating your challenge video... (1-3 min)');
-    S.videoUrl=url;
-    progStop(); toast('Video ready! ✓');
-    renderOutput();
-  } catch(e){
-    progStop(); toast(e.message||'Video generation failed','err');
+    // Save to Supabase
+    await supa.from('images').insert({
+      character_id: profile.id,
+      image_url: url,
+      prompt,
+      reference_image_url: S.imgRefImageUrl,
+    });
+
+    S.lastImage = url;
+    document.getElementById('img-result').innerHTML = `<img src="${url}" alt="generated" onclick="openModal('<img src=\\'${url}\\'>')">`;
+    document.getElementById('img-dl-btn').style.display = 'flex';
+    progHide('img');
+    toast('Image ready! ✓');
+  } catch (e) {
+    progHide('img'); toast(e.message || 'Failed', 'err');
   }
-  btn.disabled=false; btn.textContent='✦ Apply Motion to My Character';
+  btn.disabled = false; btn.textContent = '✦ Generate Image';
 }
 
-// ── UNIVERSAL POLLER ──
-// Polls Worker /api/status/:type/:id every 4s, max 5 min
-async function pollJob(type, requestId, progressMsg='Processing...'){
-  const MAX=75; let polls=0;
-  return new Promise((resolve,reject)=>{
-    const iv=setInterval(async()=>{
+// ═══════════════════════════════════════════════════════════
+// 3. GENERATE VIDEO
+// ═══════════════════════════════════════════════════════════
+async function generateVideo() {
+  if (!S.vidSelectedProfileId) { toast('Select a profile first', 'err'); return; }
+  if (!S.vidRefVideoUrl) { toast('Upload a reference video', 'err'); return; }
+
+  const profile = S.characters.find(c => c.id === S.vidSelectedProfileId);
+  if (!profile) { toast('Profile not found', 'err'); return; }
+
+  const btn = document.getElementById('vid-btn');
+  btn.disabled = true; btn.textContent = 'Processing...';
+  progShow('vid', 'Step 1: Extracting frame from video...');
+
+  try {
+    const res = await fetch(`${API}/api/video`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        profile_image_url: profile.image_url,
+        video_url: S.vidRefVideoUrl,
+      })
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'submit failed');
+
+    progShow('vid', 'Step 3: Applying motion (2-4 min)...');
+    const url = await pollJob(data.model, data.request_id, 'vid', 'Rendering final video...');
+
+    // Save
+    await supa.from('videos').insert({
+      character_id: profile.id,
+      video_url: url,
+      reference_video_url: S.vidRefVideoUrl,
+      swapped_image_url: data.swapped_image_url,
+    });
+
+    S.lastVideo = url;
+    document.getElementById('vid-result').innerHTML = `<video src="${url}" controls loop playsinline></video>`;
+    document.getElementById('vid-dl-btn').style.display = 'flex';
+    progHide('vid');
+    toast('Video ready! ✓');
+  } catch (e) {
+    progHide('vid'); toast(e.message || 'Failed', 'err');
+  }
+  btn.disabled = false; btn.textContent = '✦ Generate Video';
+}
+
+// ═══════════════════════════════════════════════════════════
+// JOB POLLING (uses model path + request_id)
+// ═══════════════════════════════════════════════════════════
+async function pollJob(modelPath, requestId, progPrefix, msg) {
+  return new Promise((resolve, reject) => {
+    let polls = 0;
+    const iv = setInterval(async () => {
       try {
-        const res=await fetch(`${API}/api/status/${type}/${requestId}`);
-        const data=await res.json();
-        if(data.status==='done'){
+        const res = await fetch(`${API}/api/status/${modelPath}/${requestId}`);
+        const data = await res.json();
+
+        if (data.status === 'done') {
           clearInterval(iv);
-          if(data.output) resolve(data.output);
+          if (data.output) resolve(data.output);
           else reject(new Error('No output URL returned'));
-        } else if(data.status==='failed'){
-          clearInterval(iv); reject(new Error(data.error||'Generation failed'));
+        } else if (data.status === 'failed') {
+          clearInterval(iv); reject(new Error(data.error || 'Generation failed'));
         } else {
-          // still processing — update message
-          const pm=document.getElementById('prog-msg');
-          if(pm) pm.textContent=progressMsg+(data.queue_position?` (queue: ${data.queue_position})`:'');
+          if (data.queue_position != null) {
+            progShow(progPrefix, `${msg} (queue: ${data.queue_position})`);
+          }
         }
-        if(++polls>MAX){ clearInterval(iv); reject(new Error('Timeout — please try again')); }
-      } catch(e){ clearInterval(iv); reject(e); }
-    },4000);
+        if (++polls > 80) { clearInterval(iv); reject(new Error('Timeout')); }
+      } catch (e) { clearInterval(iv); reject(e); }
+    }, 4000);
   });
 }
 
-function selectChallenge(key){ S.selectedChallenge=key; renderOutput(); }
-function downloadImage(){
-  if(!S.imageUrl) return;
-  const a=document.createElement('a'); a.href=S.imageUrl;
-  a.download=`${S.result?.name||'character'}.png`; a.click();
+// ═══════════════════════════════════════════════════════════
+// CHARACTERS / HISTORY
+// ═══════════════════════════════════════════════════════════
+async function loadCharacters() {
+  try {
+    const { data, error } = await supa.from('characters').select('*').order('created_at', { ascending: false });
+    if (error) throw error;
+    S.characters = data || [];
+  } catch (e) { console.error('loadCharacters:', e); }
 }
-function downloadVideo(){
-  if(!S.videoUrl) return;
-  const a=document.createElement('a'); a.href=S.videoUrl;
-  a.download=`${S.result?.name||'character'}_video.mp4`; a.click();
+
+function renderProfileGrid(prefix) {
+  const grid = document.getElementById(`${prefix}-profile-grid`);
+  if (!S.characters.length) {
+    grid.innerHTML = `<div class="profile-empty">No characters yet.<br>Create one in the Character tab.</div>`;
+    return;
+  }
+  const selectedId = prefix === 'img' ? S.imgSelectedProfileId : S.vidSelectedProfileId;
+  grid.innerHTML = S.characters.map(c => `
+    <div class="profile-card ${c.id === selectedId ? 'selected' : ''}" onclick="selectProfile('${prefix}','${c.id}')">
+      <div class="profile-card-img"><img src="${c.image_url}" alt="${c.name}"></div>
+      <div class="profile-card-name">${c.name}</div>
+    </div>
+  `).join('');
+}
+
+function selectProfile(prefix, id) {
+  if (prefix === 'img') S.imgSelectedProfileId = id;
+  else S.vidSelectedProfileId = id;
+  renderProfileGrid(prefix);
+}
+
+async function loadHistory() {
+  // Characters
+  await loadCharacters();
+  const charsEl = document.getElementById('hist-characters');
+  charsEl.innerHTML = S.characters.length
+    ? S.characters.map(c => `
+      <div class="history-card" onclick="openModal('<img src=\\'${c.image_url}\\'>')">
+        <div class="history-thumb"><img src="${c.image_url}"></div>
+        <div class="history-info">
+          <div class="history-name">${c.name}</div>
+          <div class="history-time">${new Date(c.created_at).toLocaleDateString()}</div>
+        </div>
+      </div>`).join('')
+    : '<div class="history-empty">No characters yet</div>';
+
+  // Images
+  try {
+    const { data: imgs } = await supa.from('images').select('*').order('created_at', { ascending: false }).limit(30);
+    const imgsEl = document.getElementById('hist-images');
+    imgsEl.innerHTML = imgs?.length
+      ? imgs.map(i => `
+        <div class="history-card" onclick="openModal('<img src=\\'${i.image_url}\\'>')">
+          <div class="history-thumb"><img src="${i.image_url}"></div>
+          <div class="history-info">
+            <div class="history-name">${(i.prompt||'').slice(0,40)||'Image'}</div>
+            <div class="history-time">${new Date(i.created_at).toLocaleDateString()}</div>
+          </div>
+        </div>`).join('')
+      : '<div class="history-empty">No images yet</div>';
+  } catch (e) { console.error(e); }
+
+  // Videos
+  try {
+    const { data: vids } = await supa.from('videos').select('*').order('created_at', { ascending: false }).limit(30);
+    const vidsEl = document.getElementById('hist-videos');
+    vidsEl.innerHTML = vids?.length
+      ? vids.map(v => `
+        <div class="history-card" onclick="openModal('<video src=\\'${v.video_url}\\' controls loop autoplay>')">
+          <div class="history-thumb"><video src="${v.video_url}" muted></video></div>
+          <div class="history-info">
+            <div class="history-name">Video</div>
+            <div class="history-time">${new Date(v.created_at).toLocaleDateString()}</div>
+          </div>
+        </div>`).join('')
+      : '<div class="history-empty">No videos yet</div>';
+  } catch (e) { console.error(e); }
+}
+
+// ═══════════════════════════════════════════════════════════
+// DOWNLOADS
+// ═══════════════════════════════════════════════════════════
+async function downloadImage() {
+  if (!S.lastImage) return;
+  try {
+    const r = await fetch(S.lastImage); const b = await r.blob();
+    const u = URL.createObjectURL(b);
+    const a = document.createElement('a'); a.href = u; a.download = 'character.png';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(u);
+  } catch { toast('Download failed','err'); }
+}
+async function downloadVideo() {
+  if (!S.lastVideo) return;
+  try {
+    const r = await fetch(S.lastVideo); const b = await r.blob();
+    const u = URL.createObjectURL(b);
+    const a = document.createElement('a'); a.href = u; a.download = 'video.mp4';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(u);
+  } catch { toast('Download failed','err'); }
 }
 </script>
 </body>
