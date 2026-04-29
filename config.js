@@ -8,7 +8,7 @@
 
 window.CONFIG = {
   // Cloudflare Worker URL (your deployed API)
-  API: 'charamaker-api.jjinbee614.workers.dev',
+  API: 'https://charamaker-api.jjinbee614.workers.dev',
 
   // Supabase project URL — Settings → API → Project URL
   SUPABASE_URL: 'https://opbloaihkvfcsgiopaei.supabase.co',
