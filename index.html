@@ -770,12 +770,12 @@ async function generateImage() {
   // Combine prompts: user text + analyzed reference (no faces)
   let finalPrompt;
   if (userPrompt && analyzedPrompt) {
-    finalPrompt = `${userPrompt}. Style/composition reference: ${analyzedPrompt}`;
+    finalPrompt = `${analyzedPrompt}, ${userPrompt}`;
   } else {
     finalPrompt = userPrompt || analyzedPrompt;
   }
-  // Always emphasize keeping the same character
-  finalPrompt = `Keep the same person/character from the input image. ${finalPrompt}`;
+  // Prefix with character consistency directive (gravure tag style)
+  finalPrompt = `masterpiece, best quality, 8K ultra photorealistic, same person as input image, identical face features and identity, ${finalPrompt}`;
 
   console.log('[generateImage] final prompt:', finalPrompt);
 
