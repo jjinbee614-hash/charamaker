@@ -806,8 +806,8 @@ async function generateImage() {
     let url;
     if (data.sync && data.output) {
       url = data.output;
-    } else if (data.provider === 'atlas_image' && data.atlas_request_id) {
-      progShow('img', 'Generating image (~1 min)...');
+    } else if ((data.provider === 'atlas_image' || data.provider === 'atlas_image_wan') && data.atlas_request_id) {
+      progShow('img', 'Generating image (~1-2 min)...');
       url = await pollAtlasJob(data.atlas_request_id, 'img');
     } else {
       url = await pollJob(data.model, data.request_id, 'img', 'Rendering image...', data.status_url);
