@@ -798,8 +798,10 @@ async function generateVideo() {
 
     let url;
     if (data.sync && data.output) {
-      // Backend already finished and returned the video URL
       url = data.output;
+    } else if (data.provider === 'atlas' && data.atlas_request_id) {
+      progShow('vid', 'Step 3: Applying motion (2-4 min)...');
+      url = await pollAtlasJob(data.atlas_request_id, 'vid', 'Rendering final video...');
     } else {
       progShow('vid', 'Step 3: Applying motion (2-4 min)...');
       url = await pollJob(data.model, data.request_id, 'vid', 'Rendering final video...', data.status_url);
@@ -827,6 +829,27 @@ async function generateVideo() {
 // ═══════════════════════════════════════════════════════════
 // JOB POLLING (uses model path + request_id)
 // ═══════════════════════════════════════════════════════════
+async function pollAtlasJob(atlasRequestId, progPrefix, msg) {
+  return new Promise((resolve, reject) => {
+    let polls = 0;
+    const iv = setInterval(async () => {
+      try {
+        const res = await fetch(`${API}/api/atlas/status?id=${encodeURIComponent(atlasRequestId)}`);
+        const data = await res.json();
+
+        if (data.status === 'done') {
+          clearInterval(iv);
+          if (data.output) resolve(data.output);
+          else reject(new Error('No output URL returned'));
+        } else if (data.status === 'failed') {
+          clearInterval(iv); reject(new Error(data.error || 'Generation failed'));
+        }
+        if (++polls > 100) { clearInterval(iv); reject(new Error('Timeout')); }
+      } catch (e) { clearInterval(iv); reject(e); }
+    }, 4000);
+  });
+}
+
 async function pollJob(modelPath, requestId, progPrefix, msg, statusUrl) {
   return new Promise((resolve, reject) => {
     let polls = 0;
