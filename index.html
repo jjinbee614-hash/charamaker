@@ -671,10 +671,12 @@ async function createCharacter() {
     const imgData = await imgRes.json();
     if (!imgData.ok) throw new Error(imgData.error || 'image submit failed');
 
-    // Sync response — got result directly (no polling needed)
     let imageUrl;
     if (imgData.sync && imgData.output) {
       imageUrl = imgData.output;
+    } else if (imgData.provider === 'atlas_image' && imgData.atlas_request_id) {
+      progShow('cc', 'Generating profile image (~1 min)...');
+      imageUrl = await pollAtlasJob(imgData.atlas_request_id, 'cc');
     } else {
       imageUrl = await pollJob(imgData.model, imgData.request_id, 'cc', 'Rendering character face...', imgData.status_url);
     }
@@ -796,6 +798,9 @@ async function generateImage() {
     let url;
     if (data.sync && data.output) {
       url = data.output;
+    } else if (data.provider === 'atlas_image' && data.atlas_request_id) {
+      progShow('img', 'Generating image (~1 min)...');
+      url = await pollAtlasJob(data.atlas_request_id, 'img');
     } else {
       url = await pollJob(data.model, data.request_id, 'img', 'Rendering image...', data.status_url);
     }
@@ -902,11 +907,30 @@ const VIDEO_LOADING_MESSAGES = [
   '🚀 Almost done — final touches...',
 ];
 
+const IMAGE_LOADING_MESSAGES = [
+  '🎨 Composing the scene...',
+  '👁️  Refining facial features...',
+  '✨ Detailing eye color and shape...',
+  '💇 Sculpting hair texture and flow...',
+  '🌟 Adjusting skin tone for natural glow...',
+  '👗 Rendering outfit details...',
+  '💎 Adding accessories and jewelry...',
+  '☀️  Setting up natural lighting...',
+  '🌈 Color grading and tone matching...',
+  '📸 Applying professional photography style...',
+  '✨ Adding finishing touches...',
+  '🚀 Almost done — final polish...',
+];
+
 async function pollAtlasJob(atlasRequestId, progPrefix) {
+  // Pick message set + estimated time based on context
+  const isVideo = progPrefix === 'vid';
+  const messages = isVideo ? VIDEO_LOADING_MESSAGES : IMAGE_LOADING_MESSAGES;
+  const ESTIMATED_TOTAL_SEC = isVideo ? 480 : 90; // video: 8min, image: 1.5min
+
   return new Promise((resolve, reject) => {
     let polls = 0;
     const startTime = Date.now();
-    const ESTIMATED_TOTAL_SEC = 480; // 8 min realistic average
     let msgIndex = 0;
     let lastMsgChange = 0;
 
@@ -935,16 +959,18 @@ async function pollAtlasJob(atlasRequestId, progPrefix) {
         // Estimated progress (cap at 95% until actually done)
         const pct = Math.min(95, Math.floor((elapsedSec / ESTIMATED_TOTAL_SEC) * 100));
 
-        // Rotate message every ~12 seconds
-        if (elapsedSec - lastMsgChange >= 12) {
-          msgIndex = (msgIndex + 1) % VIDEO_LOADING_MESSAGES.length;
+        // Rotate message every ~6-12 seconds (faster for image)
+        const rotateInterval = isVideo ? 12 : 6;
+        if (elapsedSec - lastMsgChange >= rotateInterval) {
+          msgIndex = (msgIndex + 1) % messages.length;
           lastMsgChange = elapsedSec;
         }
-        const currentMsg = VIDEO_LOADING_MESSAGES[msgIndex];
+        const currentMsg = messages[msgIndex];
 
         // Build display: emoji message + percent + elapsed time
         let displayMsg = `${currentMsg}  ·  ${pct}%  ·  ${elapsedStr}`;
-        if (elapsedMin >= 10) {
+        const longThreshold = isVideo ? 10 : 3;
+        if (elapsedMin >= longThreshold) {
           displayMsg += ' (taking longer than usual, hang tight)';
         }
         progShow(progPrefix, displayMsg);
