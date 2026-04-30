@@ -796,8 +796,14 @@ async function generateVideo() {
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || 'submit failed');
 
-    progShow('vid', 'Step 3: Applying motion (2-4 min)...');
-    const url = await pollJob(data.model, data.request_id, 'vid', 'Rendering final video...', data.status_url);
+    let url;
+    if (data.sync && data.output) {
+      // Backend already finished and returned the video URL
+      url = data.output;
+    } else {
+      progShow('vid', 'Step 3: Applying motion (2-4 min)...');
+      url = await pollJob(data.model, data.request_id, 'vid', 'Rendering final video...', data.status_url);
+    }
 
     // Save
     await supa.from('videos').insert({
