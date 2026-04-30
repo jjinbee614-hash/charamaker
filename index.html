@@ -725,8 +725,8 @@ function renderCharacterResult(c) {
       ${c.persona ? `<div class="char-card-persona">${c.persona}</div>` : ''}
     </div>
   `;
-  // Middle: profile image
-  document.getElementById('cc-img-preview').innerHTML = `<img src="${c.image_url}" alt="${c.name}" onclick="openModal('<img src=\\'${c.image_url}\\'>')">`;
+  // Middle: profile image with error handlers for debugging
+  document.getElementById('cc-img-preview').innerHTML = `<img src="${c.image_url}" alt="${c.name}" onclick="openModal('<img src=\\'${c.image_url}\\'>')" onerror="console.error('[render] IMAGE LOAD FAILED:', this.src);" onload="console.log('[render] image loaded successfully')">`;
   // Bottom: appearance details
   if (c.appearance) {
     document.getElementById('cc-traits').style.display = 'block';
