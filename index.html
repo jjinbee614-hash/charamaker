@@ -153,6 +153,21 @@ input:focus,textarea:focus,select:focus{border-color:rgba(167,139,250,.5)}
 .toast.err{border-color:rgba(248,113,113,.3);color:var(--r)}
 .toast.info{border-color:rgba(167,139,250,.3);color:var(--v)}
 
+/* Caption box */
+.caption-box{margin-top:1rem;padding:1.2rem;background:var(--s2);border:1px solid var(--border);border-radius:12px}
+.caption-box-title{font-size:.78rem;font-weight:700;color:var(--v);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.7rem}
+.caption-style{margin-bottom:1rem;padding-bottom:1rem;border-bottom:1px solid var(--border)}
+.caption-style:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+.caption-style-label{display:inline-block;font-size:.65rem;font-weight:800;background:rgba(167,139,250,.15);color:var(--v);padding:.2rem .6rem;border-radius:100px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5rem}
+.caption-text{font-size:.88rem;color:var(--white);line-height:1.55;margin-bottom:.5rem;white-space:pre-wrap}
+.caption-tags{font-size:.78rem;color:var(--c);line-height:1.6;margin-bottom:.6rem}
+.caption-copy-btn{font-size:.72rem;padding:.35rem .8rem;background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:6px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s}
+.caption-copy-btn:hover{border-color:rgba(167,139,250,.4);color:var(--white)}
+.caption-platform-row{display:flex;gap:.5rem;margin-bottom:.8rem;flex-wrap:wrap}
+.caption-platform-btn{flex:1;min-width:80px;padding:.5rem .7rem;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--muted);cursor:pointer;font-size:.78rem;font-family:'DM Sans',sans-serif;transition:all .2s;font-weight:600}
+.caption-platform-btn:hover{border-color:rgba(167,139,250,.3);color:var(--white)}
+.caption-platform-btn.selected{background:rgba(167,139,250,.1);border-color:var(--v);color:var(--v)}
+
 /* Modal (full-size image/video viewer) */
 .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9998;align-items:center;justify-content:center;padding:2rem;backdrop-filter:blur(8px)}
 .modal.show{display:flex}
@@ -345,6 +360,8 @@ input:focus,textarea:focus,select:focus{border-color:rgba(167,139,250,.5)}
           <div class="prog" id="img-prog"><span class="spin"></span><span id="img-prog-msg">Working...</span></div>
           <div class="img-preview" id="img-result">Generated image will appear here</div>
           <button class="btn btn-ghost btn-full" id="img-dl-btn" onclick="downloadImage()" style="margin-top:1rem;display:none">⬇ Download</button>
+          <button class="btn btn-grad btn-full" id="img-caption-btn" onclick="generateCaption('image')" style="margin-top:.6rem;display:none">✨ Create SNS Caption</button>
+          <div id="img-caption-result"></div>
         </div>
       </div>
     </div>
@@ -379,6 +396,8 @@ input:focus,textarea:focus,select:focus{border-color:rgba(167,139,250,.5)}
           <div class="prog" id="vid-prog"><span class="spin"></span><span id="vid-prog-msg">Working...</span></div>
           <div class="vid-preview" id="vid-result">Generated video will appear here</div>
           <button class="btn btn-ghost btn-full" id="vid-dl-btn" onclick="downloadVideo()" style="margin-top:1rem;display:none">⬇ Download</button>
+          <button class="btn btn-grad btn-full" id="vid-caption-btn" onclick="generateCaption('video')" style="margin-top:.6rem;display:none">✨ Create SNS Caption</button>
+          <div id="vid-caption-result"></div>
         </div>
       </div>
     </div>
@@ -763,6 +782,8 @@ async function generateImage() {
     S.lastImage = url;
     document.getElementById('img-result').innerHTML = `<img src="${url}" alt="generated" onclick="openModal('<img src=\\'${url}\\'>')">`;
     document.getElementById('img-dl-btn').style.display = 'flex';
+    document.getElementById('img-caption-btn').style.display = 'flex';
+    document.getElementById('img-caption-result').innerHTML = '';
     progHide('img');
     toast('Image ready! ✓');
   } catch (e) {
@@ -800,8 +821,8 @@ async function generateVideo() {
     if (data.sync && data.output) {
       url = data.output;
     } else if (data.provider === 'atlas' && data.atlas_request_id) {
-      progShow('vid', 'Step 3: Generating video (5-15 min, please wait)...');
-      url = await pollAtlasJob(data.atlas_request_id, 'vid', 'Rendering final video...');
+      progShow('vid', '🎬 Starting video generation...');
+      url = await pollAtlasJob(data.atlas_request_id, 'vid');
     } else {
       progShow('vid', 'Step 3: Applying motion (2-4 min)...');
       url = await pollJob(data.model, data.request_id, 'vid', 'Rendering final video...', data.status_url);
@@ -818,6 +839,8 @@ async function generateVideo() {
     S.lastVideo = url;
     document.getElementById('vid-result').innerHTML = `<video src="${url}" controls loop playsinline></video>`;
     document.getElementById('vid-dl-btn').style.display = 'flex';
+    document.getElementById('vid-caption-btn').style.display = 'flex';
+    document.getElementById('vid-caption-result').innerHTML = '';
     progHide('vid');
     toast('Video ready! ✓');
   } catch (e) {
@@ -829,10 +852,35 @@ async function generateVideo() {
 // ═══════════════════════════════════════════════════════════
 // JOB POLLING (uses model path + request_id)
 // ═══════════════════════════════════════════════════════════
-async function pollAtlasJob(atlasRequestId, progPrefix, msg) {
+// Rotating story-driven messages for video generation
+// (estimated ~8 min total: messages cycle through realistic stages)
+const VIDEO_LOADING_MESSAGES = [
+  '🎬 Analyzing reference video frames...',
+  '🎭 Mapping your character\'s facial features...',
+  '👁️  Capturing eye details and expression...',
+  '💇 Preserving hairstyle and texture...',
+  '✨ Matching skin tone and lighting...',
+  '🎨 Blending facial proportions...',
+  '🌟 Refining micro-expressions...',
+  '🎥 Tracking motion frame by frame...',
+  '🏃 Calculating body movement curves...',
+  '👋 Mapping hand and gesture motion...',
+  '🎞️  Synchronizing pose transitions...',
+  '✨ Adding natural fluid motion...',
+  '🌈 Color grading and tone matching...',
+  '💫 Polishing final transitions...',
+  '🎬 Compiling video frames...',
+  '🚀 Almost done — final touches...',
+];
+
+async function pollAtlasJob(atlasRequestId, progPrefix) {
   return new Promise((resolve, reject) => {
     let polls = 0;
     const startTime = Date.now();
+    const ESTIMATED_TOTAL_SEC = 480; // 8 min realistic average
+    let msgIndex = 0;
+    let lastMsgChange = 0;
+
     const iv = setInterval(async () => {
       try {
         const res = await fetch(`${API}/api/atlas/status?id=${encodeURIComponent(atlasRequestId)}`);
@@ -842,18 +890,36 @@ async function pollAtlasJob(atlasRequestId, progPrefix, msg) {
           clearInterval(iv);
           if (data.output) resolve(data.output);
           else reject(new Error('No output URL returned'));
-        } else if (data.status === 'failed') {
-          clearInterval(iv); reject(new Error(data.error || 'Generation failed'));
-        } else {
-          // Show elapsed time + helpful messaging
-          const elapsedMin = Math.floor((Date.now() - startTime) / 60000);
-          const elapsedSec = Math.floor(((Date.now() - startTime) % 60000) / 1000);
-          const elapsedStr = elapsedMin > 0 ? `${elapsedMin}m ${elapsedSec}s` : `${elapsedSec}s`;
-          let msg2 = `Generating video... ${elapsedStr}`;
-          if (elapsedMin >= 5) msg2 += ' (this can take up to 15 min)';
-          progShow(progPrefix, msg2);
+          return;
         }
-        // 300 polls × 4s = 1200s = 20 minutes (safe upper bound)
+        if (data.status === 'failed') {
+          clearInterval(iv); reject(new Error(data.error || 'Generation failed'));
+          return;
+        }
+
+        // Update progress UI
+        const elapsedSec = Math.floor((Date.now() - startTime) / 1000);
+        const elapsedMin = Math.floor(elapsedSec / 60);
+        const elapsedRem = elapsedSec % 60;
+        const elapsedStr = elapsedMin > 0 ? `${elapsedMin}m ${elapsedRem}s` : `${elapsedRem}s`;
+
+        // Estimated progress (cap at 95% until actually done)
+        const pct = Math.min(95, Math.floor((elapsedSec / ESTIMATED_TOTAL_SEC) * 100));
+
+        // Rotate message every ~12 seconds
+        if (elapsedSec - lastMsgChange >= 12) {
+          msgIndex = (msgIndex + 1) % VIDEO_LOADING_MESSAGES.length;
+          lastMsgChange = elapsedSec;
+        }
+        const currentMsg = VIDEO_LOADING_MESSAGES[msgIndex];
+
+        // Build display: emoji message + percent + elapsed time
+        let displayMsg = `${currentMsg}  ·  ${pct}%  ·  ${elapsedStr}`;
+        if (elapsedMin >= 10) {
+          displayMsg += ' (taking longer than usual, hang tight)';
+        }
+        progShow(progPrefix, displayMsg);
+
         if (++polls > 300) { clearInterval(iv); reject(new Error('Timeout (20 min)')); }
       } catch (e) { clearInterval(iv); reject(e); }
     }, 4000);
@@ -972,6 +1038,90 @@ async function loadHistory() {
 // ═══════════════════════════════════════════════════════════
 // DOWNLOADS
 // ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+// SNS CAPTION GENERATION
+// ═══════════════════════════════════════════════════════════
+async function generateCaption(contentType) {
+  // Determine which character was used
+  const profileId = contentType === 'image' ? S.imgSelectedProfileId : S.vidSelectedProfileId;
+  const profile = S.characters.find(c => c.id === profileId);
+  if (!profile) { toast('Character not found', 'err'); return; }
+
+  // Asset URL
+  const assetUrl = contentType === 'image' ? S.lastImage : S.lastVideo;
+  const resultId = contentType === 'image' ? 'img-caption-result' : 'vid-caption-result';
+  const btnId = contentType === 'image' ? 'img-caption-btn' : 'vid-caption-btn';
+
+  const resultEl = document.getElementById(resultId);
+  const btn = document.getElementById(btnId);
+
+  // Render platform picker first
+  resultEl.innerHTML = `
+    <div class="caption-box">
+      <div class="caption-box-title">Choose Platform</div>
+      <div class="caption-platform-row">
+        <button class="caption-platform-btn" data-platform="instagram" onclick="pickCaptionPlatform('${contentType}','instagram')">📷 Instagram</button>
+        <button class="caption-platform-btn" data-platform="tiktok" onclick="pickCaptionPlatform('${contentType}','tiktok')">🎵 TikTok</button>
+        <button class="caption-platform-btn" data-platform="twitter" onclick="pickCaptionPlatform('${contentType}','twitter')">🐦 X/Twitter</button>
+        <button class="caption-platform-btn" data-platform="youtube" onclick="pickCaptionPlatform('${contentType}','youtube')">▶️ YouTube</button>
+      </div>
+      <div id="${resultId}-output"></div>
+    </div>
+  `;
+  btn.style.display = 'none';
+}
+
+async function pickCaptionPlatform(contentType, platform) {
+  const profileId = contentType === 'image' ? S.imgSelectedProfileId : S.vidSelectedProfileId;
+  const profile = S.characters.find(c => c.id === profileId);
+  const assetUrl = contentType === 'image' ? S.lastImage : S.lastVideo;
+  const resultId = contentType === 'image' ? 'img-caption-result' : 'vid-caption-result';
+  const outEl = document.getElementById(`${resultId}-output`);
+
+  // Highlight selected
+  document.querySelectorAll(`#${resultId} .caption-platform-btn`).forEach(b => b.classList.remove('selected'));
+  document.querySelector(`#${resultId} [data-platform="${platform}"]`)?.classList.add('selected');
+
+  outEl.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--muted);font-size:.85rem"><span class="spin" style="display:inline-block;vertical-align:middle;margin-right:.4rem"></span>Crafting captions...</div>';
+
+  try {
+    const res = await fetch(`${API}/api/caption`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        character_name: profile.name,
+        character_persona: profile.persona,
+        character_niche: profile.niche,
+        content_type: contentType,
+        platform,
+        // Pass image URL for vision context (only for image type)
+        image_url: contentType === 'image' ? assetUrl : null,
+      })
+    });
+    const data = await res.json();
+    if (!data.ok || !data.captions) throw new Error(data.error || 'failed');
+
+    outEl.innerHTML = data.captions.map(c => `
+      <div class="caption-style">
+        <span class="caption-style-label">${c.style}</span>
+        <div class="caption-text">${c.text}</div>
+        <div class="caption-tags">${(c.hashtags || []).join(' ')}</div>
+        <button class="caption-copy-btn" onclick="copyCaption(this, \`${(c.text + '\n\n' + (c.hashtags || []).join(' ')).replace(/\\/g,'\\\\').replace(/\`/g,'\\\`')}\`)">📋 Copy</button>
+      </div>
+    `).join('');
+  } catch (e) {
+    outEl.innerHTML = `<div style="color:var(--r);font-size:.85rem;padding:.7rem">Caption generation failed: ${e.message || ''}</div>`;
+  }
+}
+
+function copyCaption(btn, text) {
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = '✓ Copied';
+    btn.style.color = 'var(--g)';
+    setTimeout(() => { btn.textContent = orig; btn.style.color = ''; }, 1500);
+  }).catch(() => toast('Copy failed', 'err'));
+}
+
 async function downloadImage() {
   if (!S.lastImage) return;
   try {
