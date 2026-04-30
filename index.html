@@ -671,17 +671,21 @@ async function createCharacter() {
     const imgData = await imgRes.json();
     if (!imgData.ok) throw new Error(imgData.error || 'image submit failed');
 
+    console.log('[CC] imgData received:', imgData);
     let imageUrl;
     if (imgData.sync && imgData.output) {
       imageUrl = imgData.output;
+      console.log('[CC] sync path, imageUrl:', imageUrl);
     } else if (imgData.provider === 'atlas_image' && imgData.atlas_request_id) {
       progShow('cc', 'Generating profile image (~1 min)...');
+      console.log('[CC] starting atlas poll for:', imgData.atlas_request_id);
       imageUrl = await pollAtlasJob(imgData.atlas_request_id, 'cc');
+      console.log('[CC] atlas poll resolved, imageUrl:', imageUrl);
     } else {
       imageUrl = await pollJob(imgData.model, imgData.request_id, 'cc', 'Rendering character face...', imgData.status_url);
     }
 
-    // Step 3: Save to Supabase
+    console.log('[CC] saving to Supabase, imageUrl:', imageUrl);
     progShow('cc', 'Saving to your library...');
     const { data: saved, error } = await supa.from('characters').insert({
       name: character.name,
@@ -693,7 +697,11 @@ async function createCharacter() {
       reference_image_url: S.ccRefImageUrl,
     }).select().single();
 
-    if (error) throw new Error('DB save failed: ' + error.message);
+    if (error) {
+      console.error('[CC] Supabase save error:', error);
+      throw new Error('DB save failed: ' + error.message);
+    }
+    console.log('[CC] saved record:', saved);
 
     S.ccCharacter = saved;
     progHide('cc');
@@ -941,8 +949,14 @@ async function pollAtlasJob(atlasRequestId, progPrefix) {
 
         if (data.status === 'done') {
           clearInterval(iv);
-          if (data.output) resolve(data.output);
-          else reject(new Error('No output URL returned'));
+          console.log('[pollAtlas] DONE, data:', data);
+          if (data.output) {
+            console.log('[pollAtlas] resolving with:', data.output);
+            resolve(data.output);
+          } else {
+            console.error('[pollAtlas] no output URL in done response');
+            reject(new Error('No output URL returned'));
+          }
           return;
         }
         if (data.status === 'failed') {
