@@ -398,7 +398,7 @@ input:focus,textarea:focus,select:focus{border-color:rgba(167,139,250,.5)}
             <div id="vid-ref-display">
               <div class="upload-icon">🎬</div>
               <div class="upload-text">Upload reference motion video</div>
-              <div class="upload-hint">MP4, MOV · person facing camera works best</div>
+              <div class="upload-hint">MP4, MOV · max 15 seconds · person facing camera works best</div>
             </div>
           </div>
 
@@ -596,16 +596,33 @@ async function handleRefVideo(event) {
   const file = event.target.files?.[0];
   if (!file) return;
   if (file.size > 100 * 1024 * 1024) { toast('File too large. Max 100MB.', 'err'); return; }
+
+  // Check video duration (must be ≤ 15 seconds)
+  const localUrl = URL.createObjectURL(file);
+  const duration = await new Promise((resolve, reject) => {
+    const v = document.createElement('video');
+    v.preload = 'metadata';
+    v.onloadedmetadata = () => resolve(v.duration);
+    v.onerror = () => reject(new Error('Could not read video metadata'));
+    v.src = localUrl;
+  }).catch(() => null);
+
+  if (duration && duration > 15.5) {
+    toast(`Video is ${duration.toFixed(1)}s — must be 15 seconds or less`, 'err');
+    event.target.value = ''; // reset input
+    URL.revokeObjectURL(localUrl);
+    return;
+  }
+
   toast('Uploading video...', 'info');
 
   // Show video thumbnail (first frame)
-  const localUrl = URL.createObjectURL(file);
   document.getElementById('vid-ref-display').innerHTML = `
     <div style="display:flex;gap:.7rem;align-items:center;text-align:left">
       <video src="${localUrl}" style="width:48px;height:48px;border-radius:6px;object-fit:cover;flex-shrink:0" muted></video>
       <div style="flex:1;min-width:0">
         <div class="upload-text" style="color:var(--v)">⏳ Uploading...</div>
-        <div class="upload-hint" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${file.name}</div>
+        <div class="upload-hint" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${file.name}${duration ? ` · ${duration.toFixed(1)}s` : ''}</div>
       </div>
     </div>
   `;
