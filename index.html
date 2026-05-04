@@ -167,6 +167,20 @@ input:focus,textarea:focus,select:focus{border-color:rgba(167,139,250,.5)}
 .trait-row-label{font-weight:700;color:var(--v);min-width:70px;flex-shrink:0;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;padding-top:.05rem}
 .trait-row-value{color:var(--white);opacity:.85;flex:1}
 
+/* Aspect ratio selector */
+.ratio-row{display:grid;grid-template-columns:repeat(4,1fr);gap:.4rem}
+.ratio-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.3rem;padding:.7rem .3rem;background:var(--s2);border:1.5px solid var(--border);border-radius:10px;cursor:pointer;color:var(--white);font-family:'DM Sans',sans-serif;transition:all .15s}
+.ratio-btn:hover{border-color:rgba(167,139,250,.5)}
+.ratio-btn.active{border-color:var(--v);background:rgba(167,139,250,.08)}
+.ratio-btn.active .ratio-icon{border-color:var(--v);background:rgba(167,139,250,.15)}
+.ratio-icon{display:block;border:1.5px solid var(--muted);border-radius:3px;background:transparent;flex-shrink:0;transition:all .15s}
+.ratio-1-1{width:18px;height:18px}
+.ratio-9-16{width:13px;height:23px}
+.ratio-16-9{width:23px;height:13px}
+.ratio-auto{width:18px;height:18px;background:linear-gradient(135deg,var(--v),var(--p));border:none;opacity:.7;border-radius:3px}
+.ratio-label{font-size:.78rem;font-weight:700;letter-spacing:.02em}
+.ratio-hint{font-size:.62rem;color:var(--muted);font-weight:400}
+
 /* Gallery / Showcase */
 .gallery-section{margin-top:3rem;padding-top:2rem;border-top:1px solid var(--border)}
 .gallery-h{font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;color:var(--white);letter-spacing:-.02em;margin-bottom:.4rem}
@@ -421,6 +435,31 @@ input:focus,textarea:focus,select:focus{border-color:rgba(167,139,250,.5)}
               </div>
             </div>
           </div>
+          <div class="fld">
+            <label class="fld-label">Aspect Ratio</label>
+            <div class="ratio-row">
+              <button type="button" class="ratio-btn active" data-ratio="" onclick="selectRatio(this)">
+                <span class="ratio-icon ratio-auto"></span>
+                <span class="ratio-label">Auto</span>
+                <span class="ratio-hint">From reference</span>
+              </button>
+              <button type="button" class="ratio-btn" data-ratio="1:1" onclick="selectRatio(this)">
+                <span class="ratio-icon ratio-1-1"></span>
+                <span class="ratio-label">1:1</span>
+                <span class="ratio-hint">Square</span>
+              </button>
+              <button type="button" class="ratio-btn" data-ratio="9:16" onclick="selectRatio(this)">
+                <span class="ratio-icon ratio-9-16"></span>
+                <span class="ratio-label">9:16</span>
+                <span class="ratio-hint">Vertical</span>
+              </button>
+              <button type="button" class="ratio-btn" data-ratio="16:9" onclick="selectRatio(this)">
+                <span class="ratio-icon ratio-16-9"></span>
+                <span class="ratio-label">16:9</span>
+                <span class="ratio-hint">Horizontal</span>
+              </button>
+            </div>
+          </div>
           <button class="btn btn-grad btn-full" id="img-btn" onclick="generateImage()">✦ Generate Image</button>
         </div>
 
@@ -520,7 +559,8 @@ const S = {
   characters: [],   // all loaded characters
   ccCharacter: null,    // currently designed character (not yet saved)
   ccRefImageUrl: null,  // reference for character creation
-  imgRefImageUrl: null, // reference for image generation
+  imgRefImageUrl: null,
+  imgAspectRatio: '',  // '', '1:1', '9:16', '16:9' — empty means auto // reference for image generation
   imgRefImageDataUrl: null, // base64 for analysis
   vidRefVideoUrl: null,
   imgSelectedProfileId: null,
@@ -874,6 +914,7 @@ async function generateImage() {
       body: JSON.stringify({
         profile_image_url: profile.image_url,
         prompt: finalPrompt,
+        aspect_ratio: S.imgAspectRatio || null,
         // Do NOT pass reference_image_url — we extracted its info into the prompt instead
       })
     });
@@ -1141,6 +1182,12 @@ function renderProfileGrid(prefix) {
   `).join('');
 
   grid.innerHTML = uploadTile + cardsHtml;
+}
+
+function selectRatio(btnEl) {
+  document.querySelectorAll('.ratio-btn').forEach(b => b.classList.remove('active'));
+  btnEl.classList.add('active');
+  S.imgAspectRatio = btnEl.dataset.ratio || '';
 }
 
 async function handleExtraImageUpload(event, prefix) {
@@ -1560,4 +1607,4 @@ async function downloadVideo() {
 }
 </script>
 </body>
-</html>
+</html> 
