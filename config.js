@@ -16,4 +16,6 @@ window.CONFIG = {
   // Supabase anon public key — Settings → API → anon public
   // (this is safe to expose — RLS policies protect data)
   SUPABASE_KEY: 'sb_publishable_B3q5rOaLWR9LUFeinhYrNg_u2498LFz',
+
+  ADMIN_PIN: '5864',
 };
