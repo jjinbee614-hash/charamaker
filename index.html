@@ -167,6 +167,33 @@ input:focus,textarea:focus,select:focus{border-color:rgba(167,139,250,.5)}
 .trait-row-label{font-weight:700;color:var(--v);min-width:70px;flex-shrink:0;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;padding-top:.05rem}
 .trait-row-value{color:var(--white);opacity:.85;flex:1}
 
+/* History delete button */
+.history-card{position:relative}
+.history-del{position:absolute;top:.5rem;right:.5rem;width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,.65);border:none;color:#fff;font-size:.85rem;cursor:pointer;display:none;align-items:center;justify-content:center;backdrop-filter:blur(6px);transition:all .15s;z-index:2;line-height:1}
+.history-card:hover .history-del{display:flex}
+.history-del:hover{background:var(--r);transform:scale(1.1)}
+
+/* Grouped character section */
+.char-group{margin-bottom:1.5rem;padding:1rem;background:var(--s1);border:1px solid var(--border);border-radius:14px}
+.char-group-h{display:flex;align-items:center;gap:.7rem;cursor:pointer;padding:.4rem;border-radius:8px;transition:background .15s}
+.char-group-h:hover{background:rgba(167,139,250,.05)}
+.char-group-avatar{width:44px;height:44px;border-radius:50%;overflow:hidden;flex-shrink:0;background:var(--s2)}
+.char-group-avatar img{width:100%;height:100%;object-fit:cover}
+.char-group-meta{flex:1;min-width:0}
+.char-group-name{font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;color:var(--white)}
+.char-group-stats{font-size:.72rem;color:var(--muted);margin-top:.15rem}
+.char-group-toggle{font-size:.85rem;color:var(--muted);transition:transform .2s}
+.char-group.expanded .char-group-toggle{transform:rotate(180deg)}
+.char-group-content{display:none;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border)}
+.char-group.expanded .char-group-content{display:block}
+.char-group-section{margin-bottom:1.2rem}
+.char-group-section:last-child{margin-bottom:0}
+.char-group-section-title{font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.6rem}
+.char-group-empty{font-size:.78rem;color:var(--muted);padding:.5rem 0}
+.char-group-actions{display:flex;gap:.4rem}
+.char-group-del{background:transparent;border:1px solid var(--border);color:var(--muted);font-size:.7rem;padding:.3rem .65rem;border-radius:6px;cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif}
+.char-group-del:hover{border-color:var(--r);color:var(--r)}
+
 /* Profile upload tile */
 .profile-upload-tile{cursor:pointer}
 .profile-upload-tile:hover .profile-upload-img{border-color:var(--v);color:var(--v);background:rgba(167,139,250,.08)}
@@ -425,22 +452,9 @@ input:focus,textarea:focus,select:focus{border-color:rgba(167,139,250,.5)}
     <!-- ── HISTORY TAB ── -->
     <div class="page" id="page-history">
       <h1 class="page-h1">History</h1>
-      <p class="page-sub">All your created characters, images, and videos.</p>
+      <p class="page-sub">Your characters and their creations. Click a character to expand.</p>
 
-      <div class="history-section">
-        <div class="history-h">🎭 Characters</div>
-        <div class="history-grid" id="hist-characters"></div>
-      </div>
-
-      <div class="history-section">
-        <div class="history-h">🖼️ Images</div>
-        <div class="history-grid" id="hist-images"></div>
-      </div>
-
-      <div class="history-section">
-        <div class="history-h">🎬 Videos</div>
-        <div class="history-grid" id="hist-videos"></div>
-      </div>
+      <div id="hist-grouped"></div>
     </div>
   </main>
 </div>
@@ -1127,51 +1141,131 @@ function selectProfile(prefix, id) {
 }
 
 async function loadHistory() {
-  // Characters
   await loadCharacters();
-  const charsEl = document.getElementById('hist-characters');
-  charsEl.innerHTML = S.characters.length
-    ? S.characters.map(c => `
-      <div class="history-card" onclick="openModal('<img src=\\'${c.image_url}\\'>')">
-        <div class="history-thumb"><img src="${c.image_url}"></div>
-        <div class="history-info">
-          <div class="history-name">${c.name}</div>
-          <div class="history-time">${new Date(c.created_at).toLocaleDateString()}</div>
+  const groupedEl = document.getElementById('hist-grouped');
+
+  if (!S.characters.length) {
+    groupedEl.innerHTML = '<div class="history-empty" style="padding:2rem;text-align:center">No characters yet. Create one in the Character tab.</div>';
+    return;
+  }
+
+  // Fetch all images & videos so we can group them by character
+  let allImages = [], allVideos = [];
+  try {
+    const r1 = await supa.from('images').select('*').order('created_at', { ascending: false });
+    allImages = r1.data || [];
+  } catch (e) { console.error('[hist] images', e); }
+  try {
+    const r2 = await supa.from('videos').select('*').order('created_at', { ascending: false });
+    allVideos = r2.data || [];
+  } catch (e) { console.error('[hist] videos', e); }
+
+  groupedEl.innerHTML = S.characters.map(c => {
+    const imgs = allImages.filter(i => i.character_id === c.id);
+    const vids = allVideos.filter(v => v.character_id === c.id);
+    const stats = `${imgs.length} image${imgs.length !== 1 ? 's' : ''} · ${vids.length} video${vids.length !== 1 ? 's' : ''}`;
+
+    return `
+      <div class="char-group" id="group-${c.id}">
+        <div class="char-group-h" onclick="toggleCharGroup('${c.id}')">
+          <div class="char-group-avatar"><img src="${c.image_url}" alt="${c.name}"></div>
+          <div class="char-group-meta">
+            <div class="char-group-name">${c.name || 'Untitled'}</div>
+            <div class="char-group-stats">${stats} · ${new Date(c.created_at).toLocaleDateString()}</div>
+          </div>
+          <div class="char-group-actions">
+            <button class="char-group-del" onclick="event.stopPropagation();deleteCharacter('${c.id}','${(c.name || 'this character').replace(/'/g, '\\\'')}')">Delete</button>
+          </div>
+          <div class="char-group-toggle">▼</div>
         </div>
-      </div>`).join('')
-    : '<div class="history-empty">No characters yet</div>';
-
-  // Images
-  try {
-    const { data: imgs } = await supa.from('images').select('*').order('created_at', { ascending: false }).limit(30);
-    const imgsEl = document.getElementById('hist-images');
-    imgsEl.innerHTML = imgs?.length
-      ? imgs.map(i => `
-        <div class="history-card" onclick="openModal('<img src=\\'${i.image_url}\\'>')">
-          <div class="history-thumb"><img src="${i.image_url}"></div>
-          <div class="history-info">
-            <div class="history-name">${(i.prompt||'').slice(0,40)||'Image'}</div>
-            <div class="history-time">${new Date(i.created_at).toLocaleDateString()}</div>
+        <div class="char-group-content">
+          <div class="char-group-section">
+            <div class="char-group-section-title">Profile</div>
+            <div class="history-grid">
+              <div class="history-card" onclick="openModal('<img src=\\'${c.image_url}\\'>')">
+                <div class="history-thumb"><img src="${c.image_url}"></div>
+                <div class="history-info">
+                  <div class="history-name">${c.name || 'Profile'}</div>
+                  <div class="history-time">${new Date(c.created_at).toLocaleDateString()}</div>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>`).join('')
-      : '<div class="history-empty">No images yet</div>';
-  } catch (e) { console.error(e); }
-
-  // Videos
-  try {
-    const { data: vids } = await supa.from('videos').select('*').order('created_at', { ascending: false }).limit(30);
-    const vidsEl = document.getElementById('hist-videos');
-    vidsEl.innerHTML = vids?.length
-      ? vids.map(v => `
-        <div class="history-card" onclick="openModal('<video src=\\'${v.video_url}\\' controls loop autoplay>')">
-          <div class="history-thumb"><video src="${v.video_url}" muted></video></div>
-          <div class="history-info">
-            <div class="history-name">Video</div>
-            <div class="history-time">${new Date(v.created_at).toLocaleDateString()}</div>
+          <div class="char-group-section">
+            <div class="char-group-section-title">🖼️ Images (${imgs.length})</div>
+            ${imgs.length === 0 ? '<div class="char-group-empty">No images yet</div>' : `
+              <div class="history-grid">
+                ${imgs.map(i => `
+                  <div class="history-card" onclick="openModal('<img src=\\'${i.image_url}\\'>')">
+                    <button class="history-del" onclick="event.stopPropagation();deleteAsset('image','${i.id}')" title="Delete">✕</button>
+                    <div class="history-thumb"><img src="${i.image_url}"></div>
+                    <div class="history-info">
+                      <div class="history-name">${(i.prompt || '').slice(0, 40) || 'Image'}</div>
+                      <div class="history-time">${new Date(i.created_at).toLocaleDateString()}</div>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            `}
           </div>
-        </div>`).join('')
-      : '<div class="history-empty">No videos yet</div>';
-  } catch (e) { console.error(e); }
+          <div class="char-group-section">
+            <div class="char-group-section-title">🎬 Videos (${vids.length})</div>
+            ${vids.length === 0 ? '<div class="char-group-empty">No videos yet</div>' : `
+              <div class="history-grid">
+                ${vids.map(v => `
+                  <div class="history-card" onclick="openModal('<video src=\\'${v.video_url}\\' controls loop autoplay>')">
+                    <button class="history-del" onclick="event.stopPropagation();deleteAsset('video','${v.id}')" title="Delete">✕</button>
+                    <div class="history-thumb"><video src="${v.video_url}" muted></video></div>
+                    <div class="history-info">
+                      <div class="history-name">Video</div>
+                      <div class="history-time">${new Date(v.created_at).toLocaleDateString()}</div>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            `}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function toggleCharGroup(id) {
+  const el = document.getElementById('group-' + id);
+  if (el) el.classList.toggle('expanded');
+}
+
+async function deleteCharacter(id, name) {
+  if (!confirm(`Delete "${name}" and ALL its images & videos?\n\nThis cannot be undone.`)) return;
+  try {
+    // Delete dependent assets first
+    await supa.from('images').delete().eq('character_id', id);
+    await supa.from('videos').delete().eq('character_id', id);
+    // Then character
+    const { error } = await supa.from('characters').delete().eq('id', id);
+    if (error) throw error;
+    toast('Character deleted ✓');
+    await loadHistory();
+    await loadCharacters();
+  } catch (e) {
+    console.error('[deleteCharacter]', e);
+    toast('Delete failed: ' + (e.message || ''), 'err');
+  }
+}
+
+async function deleteAsset(type, id) {
+  if (!confirm(`Delete this ${type}?`)) return;
+  try {
+    const table = type === 'image' ? 'images' : 'videos';
+    const { error } = await supa.from(table).delete().eq('id', id);
+    if (error) throw error;
+    toast(`${type[0].toUpperCase() + type.slice(1)} deleted ✓`);
+    await loadHistory();
+  } catch (e) {
+    console.error('[deleteAsset]', e);
+    toast('Delete failed: ' + (e.message || ''), 'err');
+  }
 }
 
 // ═══════════════════════════════════════════════════════════
