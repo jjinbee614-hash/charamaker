@@ -383,10 +383,10 @@ input:focus,textarea:focus,select:focus{border-color:rgba(167,139,250,.5)}
         </div>
       </div>
 
-      <!-- Gallery: showcase mixed (image + video) -->
+      <!-- Gallery: example characters -->
       <div class="gallery-section">
-        <div class="gallery-h">✨ Made with CharaMaker</div>
-        <div class="gallery-sub">See what others created. Hover any video to play.</div>
+        <div class="gallery-h">✨ Character Inspiration</div>
+        <div class="gallery-sub">Examples of characters you can create with CharaMaker.</div>
         <div class="gallery-grid" id="gallery-home"></div>
       </div>
     </div>
@@ -558,7 +558,7 @@ function openStudio() {
   document.getElementById('home-page').classList.add('hidden');
   document.getElementById('studio-page').classList.add('active');
   loadCharacters();
-  loadGallery('gallery-home', null);
+  loadGallery('gallery-home', 'character');
 }
 function goHome() {
   document.getElementById('studio-page').classList.remove('active');
@@ -571,7 +571,7 @@ function setTab(tab) {
   document.getElementById(`page-${tab}`).classList.add('active');
   if (tab === 'image') { renderProfileGrid('img'); loadGallery('gallery-image', 'image'); }
   if (tab === 'video') { renderProfileGrid('vid'); loadGallery('gallery-video', 'video'); }
-  if (tab === 'character') { loadGallery('gallery-home', null); }
+  if (tab === 'character') { loadGallery('gallery-home', 'character'); }
   if (tab === 'history') loadHistory();
   if (window.innerWidth < 780) document.getElementById('sidebar').classList.remove('open');
 }
@@ -1314,6 +1314,15 @@ async function loadGallery(targetId, filterType) {
         </div>
       `;
     }
+    // For 'character' type: show clean image without badge or caption
+    if (it.type === 'character') {
+      return `
+        <div class="gallery-item" onclick="${onClickModal}">
+          <img src="${it.url}" alt="character" loading="lazy">
+        </div>
+      `;
+    }
+    // Default: image with badge + caption
     return `
       <div class="gallery-item" onclick="${onClickModal}">
         <img src="${it.url}" alt="${escapeHtml(it.title || 'gallery item')}" loading="lazy">
