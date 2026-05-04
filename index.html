@@ -902,6 +902,7 @@ async function generateImage() {
     document.getElementById('img-dl-btn').style.display = 'flex';
     document.getElementById('img-caption-btn').style.display = 'flex';
     document.getElementById('img-caption-result').innerHTML = '';
+    refreshShareButton('img');
     progHide('img');
     toast('Image ready! ✓');
   } catch (e) {
