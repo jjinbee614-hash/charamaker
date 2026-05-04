@@ -105,8 +105,18 @@ h1 { font-family:'Syne',sans-serif; font-size:2rem; font-weight:800; letter-spac
 <script src="config.js"></script>
 <script>
 // CONFIG
-const ADMIN_PIN = (window.CONFIG && window.CONFIG.ADMIN_PIN) || '0000';
-const supa = supabase.createClient(window.CONFIG.SUPABASE_URL, window.CONFIG.SUPABASE_ANON_KEY);
+if (!window.CONFIG) {
+  document.body.innerHTML = '<div style="color:#fff;padding:2rem;font-family:sans-serif">⚠️ config.js missing or failed to load. Make sure config.js is in the same folder as admin.html.</div>';
+  throw new Error('config.js missing');
+}
+const ADMIN_PIN = window.CONFIG.ADMIN_PIN || '0000';
+const SUPABASE_URL = window.CONFIG.SUPABASE_URL;
+const SUPABASE_KEY = window.CONFIG.SUPABASE_KEY || window.CONFIG.SUPABASE_ANON_KEY;
+if (!SUPABASE_URL || !SUPABASE_KEY) {
+  document.body.innerHTML = '<div style="color:#fff;padding:2rem;font-family:sans-serif">⚠️ SUPABASE_URL or SUPABASE_KEY missing in config.js</div>';
+  throw new Error('Supabase config missing');
+}
+const supa = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let state = { tab: 'pending' };
 
