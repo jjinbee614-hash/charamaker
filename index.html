@@ -428,6 +428,7 @@ input:focus,textarea:focus,select:focus{border-color:rgba(167,139,250,.5)}
           <div class="img-preview" id="img-result">Generated image will appear here</div>
           <button class="btn btn-ghost btn-full" id="img-dl-btn" onclick="downloadImage()" style="margin-top:1rem;display:none">⬇ Download</button>
           <button class="btn btn-grad btn-full" id="img-caption-btn" onclick="generateCaption('image')" style="margin-top:.6rem;display:none">✨ Create SNS Caption</button>
+          <button class="btn btn-ghost btn-full" id="img-share-btn" onclick="shareToGallery('image')" style="margin-top:.6rem;display:none"></button>
           <div id="img-caption-result"></div>
         </div>
       </div>
@@ -471,6 +472,7 @@ input:focus,textarea:focus,select:focus{border-color:rgba(167,139,250,.5)}
           <div class="vid-preview" id="vid-result">Generated video will appear here</div>
           <button class="btn btn-ghost btn-full" id="vid-dl-btn" onclick="downloadVideo()" style="margin-top:1rem;display:none">⬇ Download</button>
           <button class="btn btn-grad btn-full" id="vid-caption-btn" onclick="generateCaption('video')" style="margin-top:.6rem;display:none">✨ Create SNS Caption</button>
+          <button class="btn btn-ghost btn-full" id="vid-share-btn" onclick="shareToGallery('video')" style="margin-top:.6rem;display:none"></button>
           <div id="vid-caption-result"></div>
         </div>
       </div>
@@ -885,15 +887,17 @@ async function generateImage() {
       url = await pollJob(data.model, data.request_id, 'img', 'Rendering image...', data.status_url);
     }
 
-    // Save to Supabase
-    await supa.from('images').insert({
+    // Save to Supabase and capture row id (for "Share with community")
+    const { data: imgRow } = await supa.from('images').insert({
       character_id: profile.id,
       image_url: url,
       prompt,
       reference_image_url: S.imgRefImageUrl,
-    });
+    }).select().single();
 
     S.lastImage = url;
+    S.lastImageRowId = imgRow?.id || null;
+    S.lastImageStatus = imgRow?.gallery_status || 'none';
     document.getElementById('img-result').innerHTML = `<img src="${url}" alt="generated" onclick="openModal('<img src=\\'${url}\\'>')">`;
     document.getElementById('img-dl-btn').style.display = 'flex';
     document.getElementById('img-caption-btn').style.display = 'flex';
@@ -942,19 +946,22 @@ async function generateVideo() {
       url = await pollJob(data.model, data.request_id, 'vid', 'Rendering final video...', data.status_url);
     }
 
-    // Save
-    await supa.from('videos').insert({
+    // Save and capture row id
+    const { data: vidRow } = await supa.from('videos').insert({
       character_id: profile.id,
       video_url: url,
       reference_video_url: S.vidRefVideoUrl,
       swapped_image_url: data.swapped_image_url,
-    });
+    }).select().single();
 
     S.lastVideo = url;
+    S.lastVideoRowId = vidRow?.id || null;
+    S.lastVideoStatus = vidRow?.gallery_status || 'none';
     document.getElementById('vid-result').innerHTML = `<video src="${url}" controls loop playsinline></video>`;
     document.getElementById('vid-dl-btn').style.display = 'flex';
     document.getElementById('vid-caption-btn').style.display = 'flex';
     document.getElementById('vid-caption-result').innerHTML = '';
+    refreshShareButton('vid');
     progHide('vid');
     toast('Video ready! ✓');
   } catch (e) {
@@ -1379,6 +1386,70 @@ async function deleteAsset(type, id) {
 // ═══════════════════════════════════════════════════════════
 // DOWNLOADS
 // ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+// SHARE TO COMMUNITY (gallery submission)
+// User clicks → status becomes 'pending' → admin reviews → if approved,
+// item is added to showcase table.
+// ═══════════════════════════════════════════════════════════
+function refreshShareButton(prefix) {
+  const btn = document.getElementById(`${prefix}-share-btn`);
+  if (!btn) return;
+  const status = prefix === 'img' ? S.lastImageStatus : S.lastVideoStatus;
+  const rowId = prefix === 'img' ? S.lastImageRowId : S.lastVideoRowId;
+  if (!rowId) { btn.style.display = 'none'; return; }
+  btn.style.display = 'flex';
+  switch (status) {
+    case 'pending':
+      btn.textContent = '⏳ Pending review';
+      btn.disabled = true;
+      btn.style.opacity = '.7';
+      break;
+    case 'approved':
+      btn.textContent = '✓ Live in gallery';
+      btn.disabled = true;
+      btn.style.opacity = '.7';
+      break;
+    case 'rejected':
+      btn.textContent = '— Not added to gallery';
+      btn.disabled = true;
+      btn.style.opacity = '.5';
+      break;
+    default:
+      btn.textContent = '🌟 Share with community';
+      btn.disabled = false;
+      btn.style.opacity = '1';
+  }
+}
+
+async function shareToGallery(type) {
+  const prefix = type === 'image' ? 'img' : 'vid';
+  const table = type === 'image' ? 'images' : 'videos';
+  const rowId = prefix === 'img' ? S.lastImageRowId : S.lastVideoRowId;
+  if (!rowId) { toast('Cannot share — record not found', 'err'); return; }
+
+  if (!confirm('Share this with the community?\n\nIt will be reviewed before appearing in the public gallery.')) return;
+
+  try {
+    const { error } = await supa
+      .from(table)
+      .update({
+        submitted_to_gallery: true,
+        submitted_at: new Date().toISOString(),
+        gallery_status: 'pending',
+      })
+      .eq('id', rowId);
+    if (error) throw error;
+
+    if (prefix === 'img') S.lastImageStatus = 'pending';
+    else S.lastVideoStatus = 'pending';
+    refreshShareButton(prefix);
+    toast('Submitted! We\'ll review it shortly ✓');
+  } catch (e) {
+    console.error('[shareToGallery]', e);
+    toast('Submit failed: ' + (e.message || ''), 'err');
+  }
+}
+
 // ═══════════════════════════════════════════════════════════
 // SNS CAPTION GENERATION
 // ═══════════════════════════════════════════════════════════
