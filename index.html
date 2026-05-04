@@ -167,6 +167,11 @@ input:focus,textarea:focus,select:focus{border-color:rgba(167,139,250,.5)}
 .trait-row-label{font-weight:700;color:var(--v);min-width:70px;flex-shrink:0;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;padding-top:.05rem}
 .trait-row-value{color:var(--white);opacity:.85;flex:1}
 
+/* Profile upload tile */
+.profile-upload-tile{cursor:pointer}
+.profile-upload-tile:hover .profile-upload-img{border-color:var(--v);color:var(--v);background:rgba(167,139,250,.08)}
+.profile-upload-img{display:flex;align-items:center;justify-content:center;border:1.5px dashed var(--border);background:transparent;color:var(--muted);font-weight:300;transition:all .2s}
+
 /* Caption box */
 .caption-box{margin-top:1rem;padding:1.2rem;background:var(--s2);border:1px solid var(--border);border-radius:12px}
 .caption-box-title{font-size:.78rem;font-weight:700;color:var(--v);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.7rem}
@@ -1054,17 +1059,65 @@ async function loadCharacters() {
 
 function renderProfileGrid(prefix) {
   const grid = document.getElementById(`${prefix}-profile-grid`);
-  if (!S.characters.length) {
-    grid.innerHTML = `<div class="profile-empty">No characters yet.<br>Create one in the Character tab.</div>`;
-    return;
-  }
   const selectedId = prefix === 'img' ? S.imgSelectedProfileId : S.vidSelectedProfileId;
-  grid.innerHTML = S.characters.map(c => `
+
+  // Always-present "upload new" tile at the start
+  const uploadTile = `
+    <div class="profile-card profile-upload-tile" onclick="document.getElementById('${prefix}-extra-upload').click()">
+      <input type="file" id="${prefix}-extra-upload" accept="image/*" style="display:none" onchange="handleExtraImageUpload(event,'${prefix}')">
+      <div class="profile-card-img profile-upload-img">
+        <div style="font-size:1.8rem;line-height:1">+</div>
+      </div>
+      <div class="profile-card-name" style="color:var(--muted)">Upload</div>
+    </div>
+  `;
+
+  const cardsHtml = S.characters.map(c => `
     <div class="profile-card ${c.id === selectedId ? 'selected' : ''}" onclick="selectProfile('${prefix}','${c.id}')">
-      <div class="profile-card-img"><img src="${c.image_url}" alt="${c.name}"></div>
-      <div class="profile-card-name">${c.name}</div>
+      <div class="profile-card-img"><img src="${c.image_url}" alt="${c.name || 'character'}"></div>
+      <div class="profile-card-name">${c.name || 'Uploaded'}</div>
     </div>
   `).join('');
+
+  grid.innerHTML = uploadTile + cardsHtml;
+}
+
+async function handleExtraImageUpload(event, prefix) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  if (file.size > 20 * 1024 * 1024) { toast('Image too large. Max 20MB.', 'err'); return; }
+
+  toast('Uploading image...', 'info');
+  try {
+    // Step 1: upload to fal storage so worker can read it
+    const fd = new FormData(); fd.append('file', file);
+    const uploadRes = await fetch(`${API}/api/upload`, { method: 'POST', body: fd });
+    const uploadData = await uploadRes.json();
+    if (!uploadData.ok) throw new Error(uploadData.error || 'upload failed');
+
+    // Step 2: save as a lightweight character record (image only, no persona)
+    const tempName = `Upload ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    const { data: saved, error } = await supa.from('characters').insert({
+      name: tempName,
+      persona: '',
+      niche: '',
+      appearance: '',
+      image_url: uploadData.url,
+      image_prompt: '',
+      reference_image_url: null,
+    }).select().single();
+    if (error) throw new Error('DB save failed: ' + error.message);
+
+    // Step 3: refresh + auto-select this new character
+    await loadCharacters();
+    selectProfile(prefix, saved.id);
+    toast('Image added ✓');
+  } catch (e) {
+    console.error('[ExtraUpload]', e);
+    toast(e.message || 'Upload failed', 'err');
+  }
+  // Reset input so same file can be re-uploaded
+  event.target.value = '';
 }
 
 function selectProfile(prefix, id) {
