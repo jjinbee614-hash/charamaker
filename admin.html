@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CharaMaker — Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0a0a0f; --s1:#13131c; --s2:#1a1a26; --s3:#22222e;
+  --border:#2a2a38; --white:#fafafa; --muted:#9ca3af;
+  --v:#a78bfa; --p:#f472b6; --g:#34d399; --r:#f87171;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+body {
+  font-family:'DM Sans',sans-serif;
+  background:var(--bg); color:var(--white); min-height:100vh;
+  padding:2rem 1.5rem;
+}
+.wrap { max-width:1200px; margin:0 auto; }
+h1 { font-family:'Syne',sans-serif; font-size:2rem; font-weight:800; letter-spacing:-.02em; margin-bottom:.3rem; }
+.sub { color:var(--muted); margin-bottom:2rem; font-size:.9rem; }
+.gate { max-width:380px; margin:5rem auto; padding:2rem; background:var(--s1); border:1px solid var(--border); border-radius:14px; }
+.gate-title { font-family:'Syne',sans-serif; font-size:1.3rem; font-weight:700; margin-bottom:.4rem; }
+.gate-sub { color:var(--muted); font-size:.85rem; margin-bottom:1.2rem; }
+.gate input { width:100%; padding:.7rem .9rem; background:var(--s2); border:1px solid var(--border); border-radius:8px; color:var(--white); font-family:inherit; font-size:1rem; margin-bottom:.8rem; }
+.gate input:focus { outline:none; border-color:var(--v); }
+.btn { padding:.7rem 1.2rem; background:linear-gradient(135deg,var(--v) 0%,var(--p) 100%); border:none; color:#fff; font-family:inherit; font-weight:700; border-radius:8px; cursor:pointer; transition:transform .15s; font-size:.9rem; }
+.btn:hover { transform:translateY(-1px); }
+.btn:disabled { opacity:.5; cursor:not-allowed; transform:none; }
+.btn-ghost { background:transparent; border:1px solid var(--border); color:var(--white); }
+.btn-ghost:hover { border-color:var(--v); }
+.btn-danger { background:linear-gradient(135deg,#dc2626,#b91c1c); }
+.btn-success { background:linear-gradient(135deg,#16a34a,#15803d); }
+
+.tabs { display:flex; gap:.4rem; margin-bottom:1.4rem; border-bottom:1px solid var(--border); }
+.tab { padding:.7rem 1.2rem; background:transparent; border:none; color:var(--muted); cursor:pointer; font-family:inherit; font-weight:600; font-size:.88rem; border-bottom:2px solid transparent; }
+.tab.active { color:var(--v); border-bottom-color:var(--v); }
+.tab:hover { color:var(--white); }
+
+.grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:1rem; }
+.card { background:var(--s1); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+.card-media { position:relative; aspect-ratio:1/1; background:var(--s3); overflow:hidden; }
+.card-media img, .card-media video { width:100%; height:100%; object-fit:cover; display:block; }
+.card-meta { padding:.8rem; }
+.card-meta-row { display:flex; gap:.5rem; align-items:center; font-size:.7rem; color:var(--muted); margin-bottom:.5rem; }
+.card-meta-row b { color:var(--white); font-weight:600; }
+.card-prompt { font-size:.78rem; color:var(--muted); margin-bottom:.7rem; line-height:1.4; max-height:3.5em; overflow:hidden; }
+.card-actions { display:flex; gap:.4rem; }
+.card-actions .btn { flex:1; padding:.5rem; font-size:.78rem; }
+
+.empty { padding:3rem 1rem; text-align:center; color:var(--muted); background:var(--s1); border:1px dashed var(--border); border-radius:12px; }
+.loading { padding:2rem; text-align:center; color:var(--muted); }
+.toolbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; gap:1rem; flex-wrap:wrap; }
+.count { font-size:.85rem; color:var(--muted); }
+.toast { position:fixed; bottom:1.5rem; left:50%; transform:translateX(-50%); background:var(--s2); border:1px solid var(--border); padding:.7rem 1.2rem; border-radius:8px; font-size:.88rem; z-index:1000; opacity:0; transition:opacity .2s; }
+.toast.show { opacity:1; }
+.toast.err { border-color:var(--r); color:var(--r); }
+.toast.ok { border-color:var(--g); color:var(--g); }
+
+.gallery-list-h { font-family:'Syne',sans-serif; font-size:1rem; font-weight:700; margin-bottom:.7rem; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; }
+.gallery-list { margin-top:2rem; padding-top:2rem; border-top:1px solid var(--border); }
+.gallery-list-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:.6rem; }
+.gli { position:relative; aspect-ratio:1/1; background:var(--s3); border-radius:8px; overflow:hidden; }
+.gli img, .gli video { width:100%; height:100%; object-fit:cover; }
+.gli-rm { position:absolute; top:.3rem; right:.3rem; width:24px; height:24px; border-radius:50%; background:rgba(0,0,0,.7); border:none; color:#fff; cursor:pointer; font-size:.8rem; display:flex; align-items:center; justify-content:center; }
+.gli-rm:hover { background:var(--r); }
+
+.logout { float:right; }
+</style>
+</head>
+<body>
+
+<!-- ── PIN GATE ── -->
+<div id="gate" class="gate">
+  <div class="gate-title">🔐 Admin Access</div>
+  <div class="gate-sub">Enter the admin PIN.</div>
+  <input type="password" id="pin-input" placeholder="PIN" autocomplete="off">
+  <button class="btn" onclick="checkPin()" style="width:100%">Enter</button>
+</div>
+
+<!-- ── ADMIN PANEL ── -->
+<div id="panel" class="wrap" style="display:none">
+  <div class="toolbar">
+    <div>
+      <h1>Showcase Admin</h1>
+      <p class="sub">Review user submissions and manage the public gallery.</p>
+    </div>
+    <button class="btn btn-ghost logout" onclick="logout()">Sign out</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="pending" onclick="setTab('pending')">⏳ Pending</button>
+    <button class="tab" data-tab="approved" onclick="setTab('approved')">✓ Approved</button>
+    <button class="tab" data-tab="rejected" onclick="setTab('rejected')">— Rejected</button>
+    <button class="tab" data-tab="gallery" onclick="setTab('gallery')">🖼️ Live gallery</button>
+  </div>
+
+  <div id="content"><div class="loading">Loading...</div></div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script>
+// CONFIG
+const ADMIN_PIN = (window.CONFIG && window.CONFIG.ADMIN_PIN) || '0000';
+const supa = supabase.createClient(window.CONFIG.SUPABASE_URL, window.CONFIG.SUPABASE_ANON_KEY);
+
+let state = { tab: 'pending' };
+
+// ── PIN GATE ──
+function checkPin() {
+  const v = document.getElementById('pin-input').value.trim();
+  if (v === ADMIN_PIN) {
+    sessionStorage.setItem('cm_admin', '1');
+    document.getElementById('gate').style.display = 'none';
+    document.getElementById('panel').style.display = 'block';
+    setTab('pending');
+  } else {
+    toast('Wrong PIN', 'err');
+  }
+}
+function logout() {
+  sessionStorage.removeItem('cm_admin');
+  location.reload();
+}
+if (sessionStorage.getItem('cm_admin') === '1') {
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('panel').style.display = 'block';
+  setTimeout(() => setTab('pending'), 0);
+}
+document.getElementById('pin-input')?.addEventListener('keydown', e => {
+  if (e.key === 'Enter') checkPin();
+});
+
+// ── TABS ──
+function setTab(tab) {
+  state.tab = tab;
+  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  if (tab === 'gallery') loadGallery();
+  else loadSubmissions(tab);
+}
+
+// ── SUBMISSIONS (pending/approved/rejected) ──
+async function loadSubmissions(status) {
+  const content = document.getElementById('content');
+  content.innerHTML = '<div class="loading">Loading...</div>';
+
+  let imgs = [], vids = [];
+  try {
+    const r1 = await supa.from('images').select('*').eq('gallery_status', status).order('submitted_at', { ascending: false });
+    imgs = r1.data || [];
+    const r2 = await supa.from('videos').select('*').eq('gallery_status', status).order('submitted_at', { ascending: false });
+    vids = r2.data || [];
+  } catch (e) {
+    content.innerHTML = `<div class="empty">Error loading: ${e.message}</div>`;
+    return;
+  }
+
+  const all = [
+    ...imgs.map(i => ({ ...i, _type: 'image' })),
+    ...vids.map(v => ({ ...v, _type: 'video' })),
+  ].sort((a, b) => new Date(b.submitted_at) - new Date(a.submitted_at));
+
+  if (!all.length) {
+    content.innerHTML = `<div class="empty">No ${status} submissions.</div>`;
+    return;
+  }
+
+  content.innerHTML = `
+    <div class="count">${all.length} ${status} submission${all.length !== 1 ? 's' : ''}</div>
+    <div class="grid" style="margin-top:1rem">
+      ${all.map(it => renderCard(it, status)).join('')}
+    </div>
+  `;
+}
+
+function renderCard(it, status) {
+  const isVideo = it._type === 'video';
+  const url = isVideo ? it.video_url : it.image_url;
+  const media = isVideo
+    ? `<video src="${url}" controls muted playsinline preload="metadata"></video>`
+    : `<img src="${url}" alt="">`;
+
+  let actions = '';
+  if (status === 'pending') {
+    actions = `
+      <button class="btn btn-success" onclick="moderate('${it._type}','${it.id}','approved')">✓ Approve</button>
+      <button class="btn btn-danger" onclick="moderate('${it._type}','${it.id}','rejected')">✕ Reject</button>
+    `;
+  } else if (status === 'approved') {
+    actions = `<button class="btn btn-ghost" onclick="moderate('${it._type}','${it.id}','rejected')">Remove from gallery</button>`;
+  } else if (status === 'rejected') {
+    actions = `<button class="btn btn-success" onclick="moderate('${it._type}','${it.id}','approved')">Approve instead</button>`;
+  }
+
+  const submitted = it.submitted_at ? new Date(it.submitted_at).toLocaleString() : '—';
+  const promptText = it.prompt ? it.prompt.slice(0, 120) + (it.prompt.length > 120 ? '...' : '') : '';
+
+  return `
+    <div class="card">
+      <div class="card-media">${media}</div>
+      <div class="card-meta">
+        <div class="card-meta-row"><b>${isVideo ? 'Video' : 'Image'}</b> · ${submitted}</div>
+        ${promptText ? `<div class="card-prompt">${escapeHtml(promptText)}</div>` : ''}
+        <div class="card-actions">${actions}</div>
+      </div>
+    </div>
+  `;
+}
+
+async function moderate(type, id, newStatus) {
+  const table = type === 'image' ? 'images' : 'videos';
+  try {
+    // 1) Update the source row's gallery_status
+    const { error: e1 } = await supa.from(table).update({ gallery_status: newStatus }).eq('id', id);
+    if (e1) throw e1;
+
+    // 2) If approved → ensure showcase entry exists. If not approved → remove from showcase.
+    if (newStatus === 'approved') {
+      // Get the row to get its url
+      const { data: row } = await supa.from(table).select('*').eq('id', id).single();
+      const url = type === 'image' ? row.image_url : row.video_url;
+
+      // Check if an entry already exists for this source
+      const { data: existing } = await supa
+        .from('showcase')
+        .select('id')
+        .eq('source_type', type)
+        .eq('source_id', id)
+        .maybeSingle();
+
+      if (!existing) {
+        const { error: e2 } = await supa.from('showcase').insert({
+          type, url, source_type: type, source_id: id, is_active: true, display_order: 0,
+        });
+        if (e2) throw e2;
+      } else {
+        // Re-activate if it was deactivated
+        await supa.from('showcase').update({ is_active: true }).eq('id', existing.id);
+      }
+      toast('Approved & added to gallery ✓', 'ok');
+    } else {
+      // Remove (deactivate) from showcase
+      await supa.from('showcase').update({ is_active: false })
+        .eq('source_type', type).eq('source_id', id);
+      toast(newStatus === 'rejected' ? 'Rejected & removed' : 'Updated', 'ok');
+    }
+
+    // Reload current view
+    setTab(state.tab);
+  } catch (e) {
+    console.error('[moderate]', e);
+    toast('Action failed: ' + e.message, 'err');
+  }
+}
+
+// ── LIVE GALLERY (current showcase entries) ──
+async function loadGallery() {
+  const content = document.getElementById('content');
+  content.innerHTML = '<div class="loading">Loading gallery...</div>';
+  try {
+    const { data: items, error } = await supa
+      .from('showcase').select('*').eq('is_active', true)
+      .order('display_order', { ascending: true })
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+
+    if (!items || !items.length) {
+      content.innerHTML = '<div class="empty">No items in the gallery yet.</div>';
+      return;
+    }
+
+    const grouped = {
+      character: items.filter(i => i.type === 'character'),
+      image: items.filter(i => i.type === 'image'),
+      video: items.filter(i => i.type === 'video'),
+    };
+
+    content.innerHTML = ['character', 'image', 'video'].map(t => {
+      if (!grouped[t].length) return '';
+      const label = t === 'character' ? 'Characters' : t === 'image' ? 'Images' : 'Videos';
+      return `
+        <div class="gallery-list">
+          <div class="gallery-list-h">${label} (${grouped[t].length})</div>
+          <div class="gallery-list-grid">
+            ${grouped[t].map(it => `
+              <div class="gli">
+                ${it.type === 'video'
+                  ? `<video src="${it.url}" muted playsinline></video>`
+                  : `<img src="${it.url}">`}
+                <button class="gli-rm" onclick="removeFromGallery('${it.id}')" title="Remove">✕</button>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }).join('');
+  } catch (e) {
+    content.innerHTML = `<div class="empty">Error: ${e.message}</div>`;
+  }
+}
+
+async function removeFromGallery(id) {
+  if (!confirm('Remove this item from the public gallery?')) return;
+  try {
+    const { error } = await supa.from('showcase').update({ is_active: false }).eq('id', id);
+    if (error) throw error;
+    toast('Removed ✓', 'ok');
+    loadGallery();
+  } catch (e) {
+    toast('Failed: ' + e.message, 'err');
+  }
+}
+
+// ── HELPERS ──
+function escapeHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function toast(msg, kind) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast ' + (kind || '') + ' show';
+  setTimeout(() => el.classList.remove('show'), 2200);
+}
+</script>
+</body>
+</html>
