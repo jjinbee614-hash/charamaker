@@ -158,12 +158,14 @@ async function loadSubmissions(status) {
   const content = document.getElementById('content');
   content.innerHTML = '<div class="loading">Loading...</div>';
 
-  let imgs = [], vids = [];
+  let imgs = [], vids = [], chars = [];
   try {
     const r1 = await supa.from('images').select('*').eq('gallery_status', status).order('submitted_at', { ascending: false });
     imgs = r1.data || [];
     const r2 = await supa.from('videos').select('*').eq('gallery_status', status).order('submitted_at', { ascending: false });
     vids = r2.data || [];
+    const r3 = await supa.from('characters').select('*').eq('gallery_status', status).order('submitted_at', { ascending: false });
+    chars = r3.data || [];
   } catch (e) {
     content.innerHTML = `<div class="empty">Error loading: ${e.message}</div>`;
     return;
@@ -172,6 +174,7 @@ async function loadSubmissions(status) {
   const all = [
     ...imgs.map(i => ({ ...i, _type: 'image' })),
     ...vids.map(v => ({ ...v, _type: 'video' })),
+    ...chars.map(c => ({ ...c, _type: 'character' })),
   ].sort((a, b) => new Date(b.submitted_at) - new Date(a.submitted_at));
 
   if (!all.length) {
@@ -189,7 +192,8 @@ async function loadSubmissions(status) {
 
 function renderCard(it, status) {
   const isVideo = it._type === 'video';
-  const url = isVideo ? it.video_url : it.image_url;
+  const isChar = it._type === 'character';
+  const url = isVideo ? it.video_url : isChar ? it.image_url : it.image_url;
   const media = isVideo
     ? `<video src="${url}" controls muted playsinline preload="metadata"></video>`
     : `<img src="${url}" alt="">`;
@@ -207,14 +211,15 @@ function renderCard(it, status) {
   }
 
   const submitted = it.submitted_at ? new Date(it.submitted_at).toLocaleString() : '—';
-  const promptText = it.prompt ? it.prompt.slice(0, 120) + (it.prompt.length > 120 ? '...' : '') : '';
+  const label = isVideo ? 'Video' : isChar ? 'Character' : 'Image';
+  const subtext = isChar ? (it.name || '') : (it.prompt ? it.prompt.slice(0, 120) + (it.prompt.length > 120 ? '...' : '') : '');
 
   return `
     <div class="card">
       <div class="card-media">${media}</div>
       <div class="card-meta">
-        <div class="card-meta-row"><b>${isVideo ? 'Video' : 'Image'}</b> · ${submitted}</div>
-        ${promptText ? `<div class="card-prompt">${escapeHtml(promptText)}</div>` : ''}
+        <div class="card-meta-row"><b>${label}</b> · ${submitted}</div>
+        ${subtext ? `<div class="card-prompt">${escapeHtml(subtext)}</div>` : ''}
         <div class="card-actions">${actions}</div>
       </div>
     </div>
@@ -222,7 +227,7 @@ function renderCard(it, status) {
 }
 
 async function moderate(type, id, newStatus) {
-  const table = type === 'image' ? 'images' : 'videos';
+  const table = type === 'image' ? 'images' : type === 'video' ? 'videos' : 'characters';
   try {
     // 1) Update the source row's gallery_status
     const { error: e1 } = await supa.from(table).update({ gallery_status: newStatus }).eq('id', id);
@@ -232,7 +237,7 @@ async function moderate(type, id, newStatus) {
     if (newStatus === 'approved') {
       // Get the row to get its url
       const { data: row } = await supa.from(table).select('*').eq('id', id).single();
-      const url = type === 'image' ? row.image_url : row.video_url;
+      const url = type === 'video' ? row.video_url : row.image_url;
 
       // Check if an entry already exists for this source
       const { data: existing } = await supa
