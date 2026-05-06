@@ -909,10 +909,18 @@ async function generateImage() {
   progShow('img', 'Generating image (1-2 min)...');
 
   try {
+    // If user picked a non-1:1 ratio, extend the profile image client-side first.
+    // This gives the model an input that already has the target aspect ratio.
+    let profileUrlForGen = profile.image_url;
+    if (S.imgAspectRatio && S.imgAspectRatio !== '1:1') {
+      progShow('img', `Preparing ${S.imgAspectRatio} canvas...`);
+      profileUrlForGen = await extendImageToAspect(profile.image_url, S.imgAspectRatio);
+    }
+
     const res = await fetch(`${API}/api/image/generate`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        profile_image_url: profile.image_url,
+        profile_image_url: profileUrlForGen,
         prompt: finalPrompt,
         aspect_ratio: S.imgAspectRatio || null,
         // Do NOT pass reference_image_url — we extracted its info into the prompt instead
@@ -1188,6 +1196,90 @@ function selectRatio(btnEl) {
   document.querySelectorAll('.ratio-btn').forEach(b => b.classList.remove('active'));
   btnEl.classList.add('active');
   S.imgAspectRatio = btnEl.dataset.ratio || '';
+}
+
+// Client-side: extend a 1:1 image into a wider/taller canvas by stretching edge pixels.
+// This gives the model an input that already has the target aspect ratio,
+// so its output also matches that ratio.
+async function extendImageToAspect(imageUrl, aspectRatio) {
+  if (!aspectRatio || aspectRatio === '1:1') return imageUrl; // no-op
+
+  // Load source image
+  const img = await new Promise((resolve, reject) => {
+    const im = new Image();
+    im.crossOrigin = 'anonymous';
+    im.onload = () => resolve(im);
+    im.onerror = () => reject(new Error('Failed to load profile image for extension'));
+    im.src = imageUrl;
+  });
+
+  // Target dimensions
+  const targets = { '9:16': { w: 1024, h: 1820 }, '16:9': { w: 1820, h: 1024 } };
+  const tgt = targets[aspectRatio];
+  if (!tgt) return imageUrl;
+
+  // Create canvas
+  const canvas = document.createElement('canvas');
+  canvas.width = tgt.w;
+  canvas.height = tgt.h;
+  const ctx = canvas.getContext('2d');
+
+  // Compute placement: scale source to fit one dimension fully, center on the other
+  // For 9:16: image height fills the canvas height, width is centered
+  // For 16:9: image width fills the canvas width, height is centered
+  const srcAspect = img.width / img.height;
+  let drawW, drawH, drawX, drawY;
+  if (aspectRatio === '9:16') {
+    // Source 1:1 → fit by width, then we have empty top/bottom (rare with 1:1 source) or fit by height
+    drawH = tgt.h;
+    drawW = drawH * srcAspect;
+    drawX = (tgt.w - drawW) / 2;
+    drawY = 0;
+  } else {
+    // 16:9 — fit by width
+    drawW = tgt.w;
+    drawH = drawW / srcAspect;
+    drawX = 0;
+    drawY = (tgt.h - drawH) / 2;
+  }
+
+  // Step 1: stretch edge pixels to fill the empty space (pre-fill)
+  // We do this by sampling a thin strip from each edge and stretching it.
+  // This creates a smooth gradient-like fill that resembles the original background.
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+
+  if (aspectRatio === '9:16') {
+    // Stretch left edge of image to fill left side
+    const stripW = 4; // thin strip from source edge
+    // Left fill
+    ctx.drawImage(img, 0, 0, stripW, img.height,
+                  0, drawY, drawX, drawH);
+    // Right fill
+    ctx.drawImage(img, img.width - stripW, 0, stripW, img.height,
+                  drawX + drawW, drawY, tgt.w - (drawX + drawW), drawH);
+  } else {
+    // 16:9 — stretch top/bottom edges
+    const stripH = 4;
+    // Top fill
+    ctx.drawImage(img, 0, 0, img.width, stripH,
+                  drawX, 0, drawW, drawY);
+    // Bottom fill
+    ctx.drawImage(img, 0, img.height - stripH, img.width, stripH,
+                  drawX, drawY + drawH, drawW, tgt.h - (drawY + drawH));
+  }
+
+  // Step 2: draw the original image on top in its centered position
+  ctx.drawImage(img, drawX, drawY, drawW, drawH);
+
+  // Convert to Blob and upload to fal.ai
+  const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png', 0.92));
+  const fd = new FormData();
+  fd.append('file', blob, `profile_${aspectRatio.replace(':', 'x')}.png`);
+  const res = await fetch(`${API}/api/upload`, { method: 'POST', body: fd });
+  const data = await res.json();
+  if (!data.ok) throw new Error('Upload of extended profile failed');
+  return data.url;
 }
 
 async function handleExtraImageUpload(event, prefix) {
@@ -1607,4 +1699,4 @@ async function downloadVideo() {
 }
 </script>
 </body>
-</html> 
+</html>
