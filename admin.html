@@ -111,6 +111,7 @@ h1 { font-family:'Syne',sans-serif; font-size:2rem; font-weight:800; letter-spac
     <button class="tab"        data-tab="approved" onclick="setTab('approved')">✓ Approved</button>
     <button class="tab"        data-tab="rejected" onclick="setTab('rejected')">— Rejected</button>
     <button class="tab"        data-tab="gallery"  onclick="setTab('gallery')">🖼️ Live gallery</button>
+    <button class="tab"        data-tab="credits"  onclick="setTab('credits')">⚡ Credits</button>
   </div>
 
   <div id="content"><div class="loading">Loading...</div></div>
@@ -259,7 +260,126 @@ function setTab(tab) {
   state.tab = tab;
   document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
   if (tab === 'gallery') loadGallery();
+  else if (tab === 'credits') loadCreditsTab();
   else loadSubmissions(tab);
+}
+
+// ── CREDITS ADMIN ──
+async function loadCreditsTab() {
+  const content = document.getElementById('content');
+  content.innerHTML = '<div class="loading">Loading users...</div>';
+
+  try {
+    // Pull all user_credits rows. Admin RLS allows full access.
+    const { data: credits, error } = await supa
+      .from('user_credits')
+      .select('user_id, credits, plan_name, plan_expires_at, updated_at')
+      .order('updated_at', { ascending: false });
+    if (error) throw error;
+
+    // Pull recent transactions for context
+    const { data: txs } = await supa
+      .from('credit_transactions')
+      .select('user_id, delta, reason, created_at')
+      .order('created_at', { ascending: false })
+      .limit(200);
+
+    if (!credits || !credits.length) {
+      content.innerHTML = '<div class="empty">No users found.</div>';
+      return;
+    }
+
+    // Group transactions by user
+    const txByUser = {};
+    (txs || []).forEach(t => {
+      if (!txByUser[t.user_id]) txByUser[t.user_id] = [];
+      txByUser[t.user_id].push(t);
+    });
+
+    content.innerHTML = `
+      <div class="count">${credits.length} user${credits.length !== 1 ? 's' : ''} · click "+ Grant" to add credits</div>
+      <div style="margin-top:1rem;display:flex;flex-direction:column;gap:.7rem">
+        ${credits.map(c => renderCreditRow(c, txByUser[c.user_id] || [])).join('')}
+      </div>
+    `;
+  } catch (e) {
+    content.innerHTML = `<div class="empty">Error: ${e.message}</div>`;
+  }
+}
+
+function renderCreditRow(c, recentTxs) {
+  const lastTx = recentTxs[0];
+  const lastTxText = lastTx ? `Last: ${lastTx.delta > 0 ? '+' : ''}${lastTx.delta} (${lastTx.reason})` : 'No activity';
+  const planLabel = (c.plan_name || 'free').toUpperCase();
+  const balanceColor = c.credits === 0 ? 'var(--r)' : c.credits < 200 ? 'var(--p)' : 'var(--white)';
+  return `
+    <div class="card" style="display:flex;align-items:center;justify-content:space-between;padding:1rem;flex-wrap:wrap;gap:1rem">
+      <div style="flex:1;min-width:200px">
+        <div style="font-family:monospace;font-size:.78rem;color:var(--muted);margin-bottom:.3rem">${c.user_id}</div>
+        <div style="display:flex;gap:.7rem;align-items:baseline">
+          <span style="font-size:1.5rem;font-weight:700;color:${balanceColor};font-family:'Syne',sans-serif">${c.credits.toLocaleString()}</span>
+          <span style="font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">${planLabel}</span>
+        </div>
+        <div style="font-size:.75rem;color:var(--muted);margin-top:.3rem">${lastTxText}</div>
+      </div>
+      <div style="display:flex;gap:.4rem">
+        <button class="btn" onclick="grantCreditsPrompt('${c.user_id}', ${c.credits})">+ Grant</button>
+        <button class="btn btn-ghost" onclick="viewUserHistory('${c.user_id}')">History</button>
+      </div>
+    </div>
+  `;
+}
+
+async function grantCreditsPrompt(userId, currentBalance) {
+  const amt = prompt(`Grant credits to user ${userId.slice(0,8)}...\n(current balance: ${currentBalance.toLocaleString()})\n\nEnter amount (positive number):`, '500');
+  if (!amt) return;
+  const n = parseInt(amt, 10);
+  if (isNaN(n) || n <= 0) { toast('Invalid amount', 'err'); return; }
+
+  try {
+    const { error } = await supa.rpc('grant_credits', {
+      p_user_id: userId,
+      p_amount: n,
+      p_reason: 'admin_grant',
+      p_ref_id: null,
+    });
+    if (error) throw error;
+    toast(`+${n.toLocaleString()} credits granted ✓`, 'ok');
+    loadCreditsTab();
+  } catch (e) {
+    console.error(e);
+    toast('Grant failed: ' + e.message, 'err');
+  }
+}
+
+async function viewUserHistory(userId) {
+  try {
+    const { data: txs, error } = await supa
+      .from('credit_transactions')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(50);
+    if (error) throw error;
+
+    const html = `
+      <div style="background:var(--s2);padding:1rem;border-radius:8px;font-family:monospace;font-size:.8rem;max-height:400px;overflow:auto">
+        ${(txs || []).map(t => {
+          const sign = t.delta > 0 ? '+' : '';
+          const color = t.delta > 0 ? 'var(--g)' : 'var(--r)';
+          return `<div style="display:flex;gap:1rem;padding:.4rem 0;border-bottom:1px solid var(--border)">
+            <span style="color:var(--muted);min-width:130px">${new Date(t.created_at).toLocaleString()}</span>
+            <span style="color:${color};min-width:60px;text-align:right">${sign}${t.delta}</span>
+            <span>${t.reason}</span>
+          </div>`;
+        }).join('')}
+      </div>
+    `;
+    const w = window.open('', '_blank', 'width=600,height=600');
+    w.document.write(`<title>${userId}</title><body style="background:#0a0a0f;color:#fff;font-family:sans-serif;padding:1rem">${html}</body>`);
+  } catch (e) {
+    toast('History failed: ' + e.message, 'err');
+  }
 }
 
 // ── SUBMISSIONS (pending/approved/rejected) ──
