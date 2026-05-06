@@ -239,6 +239,26 @@ input:focus,textarea:focus,select:focus{border-color:rgba(167,139,250,.5)}
 .auth-modal-close{margin-top:1rem;background:transparent;border:none;color:var(--muted);font-size:.78rem;cursor:pointer;font-family:inherit}
 .auth-modal-close:hover{color:var(--white)}
 
+/* Sidebar credits badge */
+.sb-credits{margin-top:1rem;padding:.7rem .9rem;display:flex;align-items:center;gap:.6rem;background:linear-gradient(135deg,rgba(167,139,250,.12),rgba(244,114,182,.08));border:1px solid rgba(167,139,250,.25);border-radius:10px}
+.sb-credits .cb-icon{font-size:1.2rem}
+.sb-credits .cb-amt{font-weight:700;font-size:.9rem;color:var(--white);font-family:'Syne',sans-serif;letter-spacing:-.01em}
+.sb-credits .cb-plan{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+
+/* Out-of-credits modal */
+.credits-modal{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:9999;backdrop-filter:blur(8px)}
+.credits-modal.show{display:flex}
+.credits-modal-card{background:var(--s1);border:1px solid var(--border);border-radius:18px;padding:2.5rem 2rem;max-width:420px;width:90%;text-align:center}
+.credits-modal-icon{font-size:3rem;margin-bottom:.7rem}
+.credits-modal-title{font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;letter-spacing:-.02em;margin-bottom:.6rem}
+.credits-modal-msg{color:var(--muted);font-size:.95rem;line-height:1.6;margin-bottom:1.5rem}
+.credits-modal-msg b{color:var(--white);font-weight:700}
+.credits-modal-actions{display:flex;flex-direction:column;gap:.6rem}
+.btn-upgrade{background:var(--grad);color:#fff;border:none;padding:.85rem 1.5rem;border-radius:10px;font-family:inherit;font-weight:700;font-size:.95rem;cursor:pointer;transition:transform .15s}
+.btn-upgrade:hover{transform:translateY(-1px)}
+.btn-upgrade-ghost{background:transparent;border:1px solid var(--border);color:var(--muted);padding:.7rem 1.2rem;border-radius:8px;font-family:inherit;font-size:.85rem;cursor:pointer;transition:all .15s}
+.btn-upgrade-ghost:hover{color:var(--white);border-color:var(--v)}
+
 /* Sidebar user widget */
 .sb-user{margin-top:auto;padding:.7rem;border-top:1px solid var(--border);display:flex;align-items:center;gap:.6rem;cursor:pointer;border-radius:8px;transition:background .15s}
 .sb-user:hover{background:var(--s2)}
@@ -376,6 +396,19 @@ input:focus,textarea:focus,select:focus{border-color:rgba(167,139,250,.5)}
   </div>
 </div>
 
+<!-- ════════ OUT OF CREDITS MODAL ════════ -->
+<div class="credits-modal" id="credits-modal" onclick="closeCreditsModal()">
+  <div class="credits-modal-card" onclick="event.stopPropagation()">
+    <div class="credits-modal-icon">⚡</div>
+    <div class="credits-modal-title">Out of credits</div>
+    <div class="credits-modal-msg" id="credits-modal-msg"></div>
+    <div class="credits-modal-actions">
+      <button class="btn-upgrade" onclick="alert('Pricing page coming soon!')">View Plans</button>
+      <button class="btn-upgrade-ghost" onclick="closeCreditsModal()">Close</button>
+    </div>
+  </div>
+</div>
+
 <!-- ════════ HOME ════════ -->
 <section class="home" id="home-page">
 
@@ -505,6 +538,7 @@ input:focus,textarea:focus,select:focus{border-color:rgba(167,139,250,.5)}
         <span class="sb-tab-icon">📚</span>History
       </button>
     </div>
+    <div id="sb-credits" class="sb-credits" style="display:none"></div>
     <div id="sb-user-area"></div>
     <div class="sb-bottom">v2 · Powered by Anthropic & fal.ai</div>
   </aside>
@@ -570,7 +604,7 @@ input:focus,textarea:focus,select:focus{border-color:rgba(167,139,250,.5)}
             <div id="cc-actions" style="display:none;margin-top:1rem;gap:.6rem;flex-wrap:wrap">
               <button class="btn btn-ghost" onclick="goToImageTab()">→ Generate Image</button>
               <button class="btn btn-ghost" onclick="goToVideoTab()">→ Generate Video</button>
-              <button class="btn btn-ghost" id="cc-share-btn" onclick="shareCharacter()" style="display:none">🌟 Share with community</button>
+              <button class="btn btn-ghost" id="cc-share-btn" onclick="shareCharacter()" style="display:none">🌟 Share to gallery</button>
             </div>
           </div>
         </div>
@@ -740,6 +774,7 @@ const S = {
   imgAspectRatio: '',  // '', '1:1', '9:16', '16:9' — empty means auto // reference for image generation
   imgRefImageDataUrl: null, // base64 for analysis
   vidRefVideoUrl: null,
+  vidRefVideoDuration: 0,  // seconds — used for video credit cost calculation
   imgSelectedProfileId: null,
   vidSelectedProfileId: null,
   lastImage: null,
@@ -831,6 +866,7 @@ async function initAuth() {
   const { data: { session } } = await supa.auth.getSession();
   S.user = session?.user || null;
   renderUserWidget();
+  if (S.user) loadCredits(); // load balance on app boot
 
   supa.auth.onAuthStateChange((event, sess) => {
     const wasSignedIn = !!S.user;
@@ -841,13 +877,115 @@ async function initAuth() {
       closeAuthModal();
       toast(`Welcome, ${S.user.user_metadata?.name || 'friend'}! ✓`);
       loadCharacters();
+      loadCredits();
     } else if (wasSignedIn && !S.user) {
       // Signed out
       S.characters = [];
+      S.credits = null;
+      renderCreditsBadge();
     }
   });
 }
 initAuth();
+
+// ═══════════════════════════════════════════════════════════
+// CREDITS SYSTEM
+// ═══════════════════════════════════════════════════════════
+
+// Credit costs (kept in sync with server-side spend_credits calls)
+const CREDIT_COSTS = {
+  character: 100,
+  image: 200,
+  video_base: 500,        // ≤ 5 seconds
+  video_per_extra_sec: 150, // each second beyond 5
+};
+
+// Compute video cost based on duration in seconds
+function videoCreditCost(seconds) {
+  const s = Math.max(1, Math.ceil(seconds || 5));
+  if (s <= 5) return CREDIT_COSTS.video_base;
+  return CREDIT_COSTS.video_base + (s - 5) * CREDIT_COSTS.video_per_extra_sec;
+}
+
+// Cache the user's current credit balance and plan
+S.credits = null;       // null = not loaded; -1 = admin (unlimited)
+S.plan = 'free';
+
+async function loadCredits() {
+  if (!S.user) { S.credits = null; renderCreditsBadge(); return; }
+  if (S.user.app_metadata?.is_admin) {
+    S.credits = -1; // sentinel: unlimited
+    S.plan = 'admin';
+    renderCreditsBadge();
+    return;
+  }
+  try {
+    const { data, error } = await supa
+      .from('user_credits')
+      .select('credits, plan_name')
+      .eq('user_id', S.user.id)
+      .maybeSingle();
+    if (error) throw error;
+    S.credits = data?.credits ?? 0;
+    S.plan = data?.plan_name || 'free';
+    renderCreditsBadge();
+  } catch (e) {
+    console.error('[credits] load failed:', e);
+  }
+}
+
+function renderCreditsBadge() {
+  const el = document.getElementById('sb-credits');
+  if (!el) return;
+  if (!S.user) { el.style.display = 'none'; return; }
+  el.style.display = 'flex';
+  if (S.credits === -1) {
+    el.innerHTML = `<span class="cb-icon">∞</span><div><div class="cb-amt">Unlimited</div><div class="cb-plan">Admin</div></div>`;
+  } else {
+    const planLabel = (S.plan || 'free').charAt(0).toUpperCase() + (S.plan || 'free').slice(1);
+    el.innerHTML = `<span class="cb-icon">⚡</span><div><div class="cb-amt">${(S.credits ?? 0).toLocaleString()}</div><div class="cb-plan">${planLabel} plan</div></div>`;
+  }
+}
+
+// Try to spend credits via the SQL RPC. Returns the new balance, or throws.
+async function spendCredits(amount, reason, refId, metadata) {
+  if (S.credits === -1) return -1; // admin bypass
+  const { data, error } = await supa.rpc('spend_credits', {
+    p_amount: amount,
+    p_reason: reason,
+    p_ref_id: refId || null,
+    p_metadata: metadata || null,
+  });
+  if (error) {
+    if (error.message?.includes('insufficient_credits')) {
+      throw new Error('insufficient_credits');
+    }
+    throw error;
+  }
+  S.credits = data;
+  renderCreditsBadge();
+  return data;
+}
+
+// Open the "out of credits" modal
+function openOutOfCreditsModal(needed, action) {
+  const modal = document.getElementById('credits-modal');
+  const have = (S.credits ?? 0).toLocaleString();
+  document.getElementById('credits-modal-msg').innerHTML = `
+    You need <b>${needed.toLocaleString()}</b> credits to ${action || 'continue'}.<br>
+    You have <b>${have}</b>.
+  `;
+  modal.classList.add('show');
+}
+function closeCreditsModal() {
+  document.getElementById('credits-modal').classList.remove('show');
+}
+
+// Pre-flight check: is the user able to spend `amount` right now?
+function canSpend(amount) {
+  if (S.credits === -1) return true; // admin
+  return (S.credits ?? 0) >= amount;
+}
 
 // ═══════════════════════════════════════════════════════════
 // LANDING PAGE INIT (gallery preview + scroll reveals)
@@ -1040,6 +1178,7 @@ async function handleRefVideo(event) {
     if (!data.ok) throw new Error(data.error || 'upload failed');
 
     S.vidRefVideoUrl = data.url;
+    S.vidRefVideoDuration = duration || 0;
     document.getElementById('vid-ref-zone').classList.add('has-file');
     document.getElementById('vid-ref-display').innerHTML = `
       <div style="display:flex;gap:.7rem;align-items:center;text-align:left">
@@ -1066,6 +1205,13 @@ async function handleRefVideo(event) {
 // ═══════════════════════════════════════════════════════════
 async function createCharacter() {
   if (!requireAuth('Sign in to design your AI character.')) return;
+
+  // Pre-flight credit check
+  const cost = CREDIT_COSTS.character;
+  if (!canSpend(cost)) {
+    openOutOfCreditsModal(cost, 'create a character');
+    return;
+  }
 
   const name = document.getElementById('cc-name').value.trim();
   const appearance = document.getElementById('cc-appearance').value.trim();
@@ -1130,6 +1276,8 @@ async function createCharacter() {
     console.log('[CC] saved record:', saved);
 
     S.ccCharacter = saved;
+    // Spend credits (after success). RLS prevents users from manipulating this.
+    try { await spendCredits(CREDIT_COSTS.character, 'spend_character', saved.id); } catch (e) { console.warn('[credits]', e); }
     progHide('cc');
     renderCharacterResult(saved);
     toast(`${saved.name} created! ✓`);
@@ -1181,7 +1329,7 @@ function renderCharacterResult(c) {
         shareBtn.textContent = '— Not added to gallery';
         shareBtn.disabled = true; shareBtn.style.opacity = '.5'; break;
       default:
-        shareBtn.textContent = '🌟 Share with community';
+        shareBtn.textContent = '🌟 Share to gallery';
         shareBtn.disabled = false; shareBtn.style.opacity = '1';
     }
   }
@@ -1193,6 +1341,13 @@ function renderCharacterResult(c) {
 async function generateImage() {
   if (!requireAuth('Sign in to generate images.')) return;
   if (!S.imgSelectedProfileId) { toast('Select a profile first', 'err'); return; }
+
+  // Pre-flight credit check
+  const cost = CREDIT_COSTS.image;
+  if (!canSpend(cost)) {
+    openOutOfCreditsModal(cost, 'generate an image');
+    return;
+  }
   let userPrompt = document.getElementById('img-prompt').value.trim();
   const hasRef = !!S.imgRefImageUrl;
 
@@ -1282,6 +1437,7 @@ async function generateImage() {
     S.lastImage = url;
     S.lastImageRowId = imgRow?.id || null;
     S.lastImageStatus = imgRow?.gallery_status || 'none';
+    try { await spendCredits(CREDIT_COSTS.image, 'spend_image', imgRow?.id || null); } catch (e) { console.warn('[credits]', e); }
     document.getElementById('img-result').innerHTML = `<img src="${url}" alt="generated" onclick="openModal('<img src=\\'${url}\\'>')">`;
     document.getElementById('img-dl-btn').style.display = 'flex';
     document.getElementById('img-caption-btn').style.display = 'flex';
@@ -1302,6 +1458,13 @@ async function generateVideo() {
   if (!requireAuth('Sign in to generate videos.')) return;
   if (!S.vidSelectedProfileId) { toast('Select a profile first', 'err'); return; }
   if (!S.vidRefVideoUrl) { toast('Upload a reference video', 'err'); return; }
+
+  // Pre-flight credit check (cost depends on video duration)
+  const cost = videoCreditCost(S.vidRefVideoDuration);
+  if (!canSpend(cost)) {
+    openOutOfCreditsModal(cost, `generate a ${Math.ceil(S.vidRefVideoDuration || 5)}s video`);
+    return;
+  }
 
   const profile = S.characters.find(c => c.id === S.vidSelectedProfileId);
   if (!profile) { toast('Profile not found', 'err'); return; }
@@ -1344,6 +1507,10 @@ async function generateVideo() {
     S.lastVideo = url;
     S.lastVideoRowId = vidRow?.id || null;
     S.lastVideoStatus = vidRow?.gallery_status || 'none';
+    try {
+      const dur = S.vidRefVideoDuration;
+      await spendCredits(videoCreditCost(dur), 'spend_video', vidRow?.id || null, { video_seconds: Math.ceil(dur || 5) });
+    } catch (e) { console.warn('[credits]', e); }
     document.getElementById('vid-result').innerHTML = `<video src="${url}" controls loop playsinline></video>`;
     document.getElementById('vid-dl-btn').style.display = 'flex';
     document.getElementById('vid-caption-btn').style.display = 'flex';
@@ -1903,16 +2070,16 @@ function refreshShareButton(prefix) {
       btn.style.opacity = '.5';
       break;
     default:
-      btn.textContent = '🌟 Share with community';
+      btn.textContent = '🌟 Share to gallery';
       btn.disabled = false;
       btn.style.opacity = '1';
   }
 }
 
 async function shareCharacter() {
-  if (!requireAuth('Sign in to share with the community.')) return;
+  if (!requireAuth('Sign in to share to the gallery.')) return;
   if (!S.ccCharacter?.id) { toast('No character to share', 'err'); return; }
-  if (!confirm('Share this character with the community?\n\nIt will be reviewed before appearing in the public gallery.')) return;
+  if (!confirm('Share this character to the public gallery?\n\nIt will be reviewed before appearing in the gallery.')) return;
 
   try {
     const { error } = await supa
@@ -1935,13 +2102,13 @@ async function shareCharacter() {
 }
 
 async function shareToGallery(type) {
-  if (!requireAuth('Sign in to share with the community.')) return;
+  if (!requireAuth('Sign in to share to the gallery.')) return;
   const prefix = type === 'image' ? 'img' : 'vid';
   const table = type === 'image' ? 'images' : 'videos';
   const rowId = prefix === 'img' ? S.lastImageRowId : S.lastVideoRowId;
   if (!rowId) { toast('Cannot share — record not found', 'err'); return; }
 
-  if (!confirm('Share this with the community?\n\nIt will be reviewed before appearing in the public gallery.')) return;
+  if (!confirm('Share this to the public gallery?\n\nIt will be reviewed before appearing in the gallery.')) return;
 
   try {
     const { error } = await supa
