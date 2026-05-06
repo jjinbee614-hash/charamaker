@@ -1708,33 +1708,37 @@ function selectRatio(btnEl) {
 async function extendImageToAspect(imageUrl, aspectRatio) {
   if (!aspectRatio || aspectRatio === '1:1') return imageUrl; // no-op
 
-  // Try to load the source image directly. If CORS blocks (e.g. external upload host),
-  // fall back to fetching via our /api/proxy-image which re-hosts on fal.ai.
-  let img;
-  try {
-    img = await new Promise((resolve, reject) => {
-      const im = new Image();
-      im.crossOrigin = 'anonymous';
-      im.onload = () => resolve(im);
-      im.onerror = () => reject(new Error('cors'));
-      im.src = imageUrl;
-    });
-  } catch (e) {
-    // Re-host via worker → fal.ai (CORS-allowed)
-    const r = await fetch(`${API}/api/rehost-image`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url: imageUrl })
-    });
-    const d = await r.json();
-    if (!d.ok || !d.url) throw new Error('Failed to load image (CORS) and rehost failed');
-    img = await new Promise((resolve, reject) => {
-      const im = new Image();
-      im.crossOrigin = 'anonymous';
-      im.onload = () => resolve(im);
-      im.onerror = () => reject(new Error('Rehosted image still failed to load'));
-      im.src = d.url;
-    });
+  // If the source image is NOT on fal.media (which we trust + has CORS),
+  // pre-rehost it through our worker so Canvas can read pixel data.
+  // External hosts (oss.filenest.top, dashscope.aliyuncs.com etc.) often block CORS.
+  let safeUrl = imageUrl;
+  if (!/(?:fal\.media|fal\.ai)/i.test(imageUrl)) {
+    try {
+      console.log('[extend] non-fal source, rehosting:', imageUrl);
+      const r = await fetch(`${API}/api/rehost-image`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: imageUrl })
+      });
+      const d = await r.json();
+      if (d.ok && d.url) {
+        safeUrl = d.url;
+        console.log('[extend] rehosted to:', safeUrl);
+      } else {
+        console.warn('[extend] rehost failed, will try direct:', d);
+      }
+    } catch (e) {
+      console.warn('[extend] rehost call failed:', e.message);
+    }
   }
+
+  // Now load the (potentially rehosted) image
+  const img = await new Promise((resolve, reject) => {
+    const im = new Image();
+    im.crossOrigin = 'anonymous';
+    im.onload = () => resolve(im);
+    im.onerror = () => reject(new Error('Failed to load profile image even after rehost'));
+    im.src = safeUrl;
+  });
 
   // Target dimensions
   const targets = { '9:16': { w: 1024, h: 1820 }, '16:9': { w: 1820, h: 1024 } };
