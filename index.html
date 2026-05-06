@@ -1708,14 +1708,33 @@ function selectRatio(btnEl) {
 async function extendImageToAspect(imageUrl, aspectRatio) {
   if (!aspectRatio || aspectRatio === '1:1') return imageUrl; // no-op
 
-  // Load source image
-  const img = await new Promise((resolve, reject) => {
-    const im = new Image();
-    im.crossOrigin = 'anonymous';
-    im.onload = () => resolve(im);
-    im.onerror = () => reject(new Error('Failed to load profile image for extension'));
-    im.src = imageUrl;
-  });
+  // Try to load the source image directly. If CORS blocks (e.g. external upload host),
+  // fall back to fetching via our /api/proxy-image which re-hosts on fal.ai.
+  let img;
+  try {
+    img = await new Promise((resolve, reject) => {
+      const im = new Image();
+      im.crossOrigin = 'anonymous';
+      im.onload = () => resolve(im);
+      im.onerror = () => reject(new Error('cors'));
+      im.src = imageUrl;
+    });
+  } catch (e) {
+    // Re-host via worker → fal.ai (CORS-allowed)
+    const r = await fetch(`${API}/api/rehost-image`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: imageUrl })
+    });
+    const d = await r.json();
+    if (!d.ok || !d.url) throw new Error('Failed to load image (CORS) and rehost failed');
+    img = await new Promise((resolve, reject) => {
+      const im = new Image();
+      im.crossOrigin = 'anonymous';
+      im.onload = () => resolve(im);
+      im.onerror = () => reject(new Error('Rehosted image still failed to load'));
+      im.src = d.url;
+    });
+  }
 
   // Target dimensions
   const targets = { '9:16': { w: 1024, h: 1820 }, '16:9': { w: 1820, h: 1024 } };
