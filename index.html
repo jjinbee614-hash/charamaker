@@ -404,6 +404,7 @@ input:focus,textarea:focus,select:focus{border-color:rgba(167,139,250,.5)}
             <div id="cc-actions" style="display:none;margin-top:1rem;gap:.6rem;flex-wrap:wrap">
               <button class="btn btn-ghost" onclick="goToImageTab()">→ Generate Image</button>
               <button class="btn btn-ghost" onclick="goToVideoTab()">→ Generate Video</button>
+              <button class="btn btn-ghost" id="cc-share-btn" onclick="shareCharacter()" style="display:none">🌟 Share with community</button>
             </div>
           </div>
         </div>
@@ -864,6 +865,27 @@ function renderCharacterResult(c) {
     `;
   }
   document.getElementById('cc-actions').style.display = 'flex';
+
+  // Show share button (state-aware: none/pending/approved/rejected)
+  const shareBtn = document.getElementById('cc-share-btn');
+  if (shareBtn) {
+    shareBtn.style.display = 'flex';
+    const status = c.gallery_status || 'none';
+    switch (status) {
+      case 'pending':
+        shareBtn.textContent = '⏳ Pending review';
+        shareBtn.disabled = true; shareBtn.style.opacity = '.7'; break;
+      case 'approved':
+        shareBtn.textContent = '✓ Live in gallery';
+        shareBtn.disabled = true; shareBtn.style.opacity = '.7'; break;
+      case 'rejected':
+        shareBtn.textContent = '— Not added to gallery';
+        shareBtn.disabled = true; shareBtn.style.opacity = '.5'; break;
+      default:
+        shareBtn.textContent = '🌟 Share with community';
+        shareBtn.disabled = false; shareBtn.style.opacity = '1';
+    }
+  }
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1571,6 +1593,30 @@ function refreshShareButton(prefix) {
       btn.textContent = '🌟 Share with community';
       btn.disabled = false;
       btn.style.opacity = '1';
+  }
+}
+
+async function shareCharacter() {
+  if (!S.ccCharacter?.id) { toast('No character to share', 'err'); return; }
+  if (!confirm('Share this character with the community?\n\nIt will be reviewed before appearing in the public gallery.')) return;
+
+  try {
+    const { error } = await supa
+      .from('characters')
+      .update({
+        submitted_to_gallery: true,
+        submitted_at: new Date().toISOString(),
+        gallery_status: 'pending',
+      })
+      .eq('id', S.ccCharacter.id);
+    if (error) throw error;
+
+    S.ccCharacter.gallery_status = 'pending';
+    renderCharacterResult(S.ccCharacter);
+    toast('Submitted! We\'ll review it shortly ✓');
+  } catch (e) {
+    console.error('[shareCharacter]', e);
+    toast('Submit failed: ' + (e.message || ''), 'err');
   }
 }
 
