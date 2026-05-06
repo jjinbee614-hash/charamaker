@@ -1496,18 +1496,20 @@ async function loadGallery(targetId, filterType) {
         </div>
       `;
     }
-    // For 'character' type: show clean image without badge or caption
+    // For 'character' type: show clean image without badge or caption (use thumbnail if available)
     if (it.type === 'character') {
+      const displayUrl = it.thumbnail_url || it.url;
       return `
         <div class="gallery-item" onclick="${onClickModal}">
-          <img src="${it.url}" alt="" loading="lazy" onload="this.classList.add('loaded')">
+          <img src="${displayUrl}" alt="" loading="lazy" onload="this.classList.add('loaded')">
         </div>
       `;
     }
-    // Default: image with badge + caption
+    // Default: image with badge + caption (use thumbnail if available, original on click)
+    const displayUrl = it.thumbnail_url || it.url;
     return `
       <div class="gallery-item" onclick="${onClickModal}">
-        <img src="${it.url}" alt="" loading="lazy" onload="this.classList.add('loaded')">
+        <img src="${displayUrl}" alt="" loading="lazy" onload="this.classList.add('loaded')">
         <div class="gallery-badge">${badge}</div>
         ${caption}
       </div>
