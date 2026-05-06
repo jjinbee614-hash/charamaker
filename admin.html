@@ -20,11 +20,17 @@ body {
 .wrap { max-width:1200px; margin:0 auto; }
 h1 { font-family:'Syne',sans-serif; font-size:2rem; font-weight:800; letter-spacing:-.02em; margin-bottom:.3rem; }
 .sub { color:var(--muted); margin-bottom:2rem; font-size:.9rem; }
-.gate { max-width:380px; margin:5rem auto; padding:2rem; background:var(--s1); border:1px solid var(--border); border-radius:14px; }
-.gate-title { font-family:'Syne',sans-serif; font-size:1.3rem; font-weight:700; margin-bottom:.4rem; }
-.gate-sub { color:var(--muted); font-size:.85rem; margin-bottom:1.2rem; }
-.gate input { width:100%; padding:.7rem .9rem; background:var(--s2); border:1px solid var(--border); border-radius:8px; color:var(--white); font-family:inherit; font-size:1rem; margin-bottom:.8rem; }
-.gate input:focus { outline:none; border-color:var(--v); }
+
+/* Auth gate */
+.gate { max-width:420px; margin:5rem auto; padding:2.5rem 2rem; background:var(--s1); border:1px solid var(--border); border-radius:14px; text-align:center }
+.gate-title { font-family:'Syne',sans-serif; font-size:1.4rem; font-weight:800; margin-bottom:.4rem; letter-spacing:-.02em }
+.gate-sub { color:var(--muted); font-size:.88rem; margin-bottom:1.5rem; line-height:1.5 }
+.gate-status { color:var(--r); font-size:.85rem; margin-top:1rem; min-height:1.2em }
+.btn-google { display:flex; align-items:center; justify-content:center; gap:.7rem; width:100%; padding:.85rem 1rem; background:#fff; color:#1f1f1f; border:none; border-radius:10px; cursor:pointer; font-family:inherit; font-weight:600; font-size:.95rem; transition:transform .15s }
+.btn-google:hover { transform:translateY(-1px) }
+.btn-google svg { width:18px; height:18px }
+
+/* Generic buttons */
 .btn { padding:.7rem 1.2rem; background:linear-gradient(135deg,var(--v) 0%,var(--p) 100%); border:none; color:#fff; font-family:inherit; font-weight:700; border-radius:8px; cursor:pointer; transition:transform .15s; font-size:.9rem; }
 .btn:hover { transform:translateY(-1px); }
 .btn:disabled { opacity:.5; cursor:not-allowed; transform:none; }
@@ -52,7 +58,13 @@ h1 { font-family:'Syne',sans-serif; font-size:2rem; font-weight:800; letter-spac
 .empty { padding:3rem 1rem; text-align:center; color:var(--muted); background:var(--s1); border:1px dashed var(--border); border-radius:12px; }
 .loading { padding:2rem; text-align:center; color:var(--muted); }
 .toolbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; gap:1rem; flex-wrap:wrap; }
+.toolbar-meta { display:flex; align-items:center; gap:.7rem }
+.toolbar-meta .avatar { width:32px; height:32px; border-radius:50%; background:var(--s3); overflow:hidden; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:.85rem; color:var(--muted) }
+.toolbar-meta .avatar img { width:100%; height:100%; object-fit:cover }
+.toolbar-meta .who { font-size:.8rem; color:var(--muted) }
+.toolbar-meta .who b { color:var(--white); font-weight:600 }
 .count { font-size:.85rem; color:var(--muted); }
+
 .toast { position:fixed; bottom:1.5rem; left:50%; transform:translateX(-50%); background:var(--s2); border:1px solid var(--border); padding:.7rem 1.2rem; border-radius:8px; font-size:.88rem; z-index:1000; opacity:0; transition:opacity .2s; }
 .toast.show { opacity:1; }
 .toast.err { border-color:var(--r); color:var(--r); }
@@ -65,18 +77,19 @@ h1 { font-family:'Syne',sans-serif; font-size:2rem; font-weight:800; letter-spac
 .gli img, .gli video { width:100%; height:100%; object-fit:cover; }
 .gli-rm { position:absolute; top:.3rem; right:.3rem; width:24px; height:24px; border-radius:50%; background:rgba(0,0,0,.7); border:none; color:#fff; cursor:pointer; font-size:.8rem; display:flex; align-items:center; justify-content:center; }
 .gli-rm:hover { background:var(--r); }
-
-.logout { float:right; }
 </style>
 </head>
 <body>
 
-<!-- ── PIN GATE ── -->
+<!-- ── AUTH GATE ── -->
 <div id="gate" class="gate">
-  <div class="gate-title">🔐 Admin Access</div>
-  <div class="gate-sub">Enter the admin PIN.</div>
-  <input type="password" id="pin-input" placeholder="PIN" autocomplete="off">
-  <button class="btn" onclick="checkPin()" style="width:100%">Enter</button>
+  <div class="gate-title">🔐 Admin Console</div>
+  <div class="gate-sub">Sign in with your admin Google account.</div>
+  <button class="btn-google" onclick="signIn()">
+    <svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3c-1.6 4.6-6 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34.5 6.5 29.5 4.5 24 4.5 12.7 4.5 3.5 13.7 3.5 25S12.7 45.5 24 45.5 44.5 36.3 44.5 25c0-1.7-.2-3.3-.5-4.9z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34.5 6.5 29.5 4.5 24 4.5 16.3 4.5 9.7 8.7 6.3 14.7z"/><path fill="#4CAF50" d="M24 45.5c5.4 0 10.3-2.1 14-5.4l-6.5-5.5C29.6 36 26.9 37 24 37c-5.3 0-9.8-3.4-11.4-8L6 33.7C9.4 39.8 16.2 45.5 24 45.5z"/><path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4 5.6l6.5 5.5c-.5.4 6.7-4.9 6.7-14.1 0-1.7-.2-3.3-.5-4.9z"/></svg>
+    Sign in with Google
+  </button>
+  <div class="gate-status" id="gate-status"></div>
 </div>
 
 <!-- ── ADMIN PANEL ── -->
@@ -86,14 +99,18 @@ h1 { font-family:'Syne',sans-serif; font-size:2rem; font-weight:800; letter-spac
       <h1>Showcase Admin</h1>
       <p class="sub">Review user submissions and manage the public gallery.</p>
     </div>
-    <button class="btn btn-ghost logout" onclick="logout()">Sign out</button>
+    <div class="toolbar-meta">
+      <div class="avatar" id="me-avatar"></div>
+      <div class="who" id="me-who"></div>
+      <button class="btn btn-ghost" onclick="signOut()">Sign out</button>
+    </div>
   </div>
 
   <div class="tabs">
-    <button class="tab active" data-tab="pending" onclick="setTab('pending')">⏳ Pending</button>
-    <button class="tab" data-tab="approved" onclick="setTab('approved')">✓ Approved</button>
-    <button class="tab" data-tab="rejected" onclick="setTab('rejected')">— Rejected</button>
-    <button class="tab" data-tab="gallery" onclick="setTab('gallery')">🖼️ Live gallery</button>
+    <button class="tab active" data-tab="pending"  onclick="setTab('pending')">⏳ Pending</button>
+    <button class="tab"        data-tab="approved" onclick="setTab('approved')">✓ Approved</button>
+    <button class="tab"        data-tab="rejected" onclick="setTab('rejected')">— Rejected</button>
+    <button class="tab"        data-tab="gallery"  onclick="setTab('gallery')">🖼️ Live gallery</button>
   </div>
 
   <div id="content"><div class="loading">Loading...</div></div>
@@ -104,26 +121,107 @@ h1 { font-family:'Syne',sans-serif; font-size:2rem; font-weight:800; letter-spac
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <script>
-// CONFIG
+// ── CONFIG ──
 if (!window.CONFIG) {
-  document.body.innerHTML = '<div style="color:#fff;padding:2rem;font-family:sans-serif">⚠️ config.js missing or failed to load. Make sure config.js is in the same folder as admin.html.</div>';
+  document.body.innerHTML = '<div style="color:#fff;padding:2rem;font-family:sans-serif">⚠️ config.js missing or failed to load.</div>';
   throw new Error('config.js missing');
 }
-const ADMIN_PIN = window.CONFIG.ADMIN_PIN || '0000';
 const SUPABASE_URL = window.CONFIG.SUPABASE_URL;
 const SUPABASE_KEY = window.CONFIG.SUPABASE_KEY || window.CONFIG.SUPABASE_ANON_KEY;
+const API = window.CONFIG.API;
 if (!SUPABASE_URL || !SUPABASE_KEY) {
-  document.body.innerHTML = '<div style="color:#fff;padding:2rem;font-family:sans-serif">⚠️ SUPABASE_URL or SUPABASE_KEY missing in config.js</div>';
+  document.body.innerHTML = '<div style="color:#fff;padding:2rem;font-family:sans-serif">⚠️ Supabase config missing.</div>';
   throw new Error('Supabase config missing');
 }
 const supa = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-const API = window.CONFIG.API;
 
-let state = { tab: 'pending' };
+let state = { tab: 'pending', user: null };
+
+// ── AUTH GATE ──
+async function signIn() {
+  try {
+    const { error } = await supa.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin + window.location.pathname },
+    });
+    if (error) throw error;
+  } catch (e) {
+    setStatus(e.message || 'Sign-in failed', true);
+  }
+}
+
+async function signOut() {
+  await supa.auth.signOut();
+  state.user = null;
+  document.getElementById('panel').style.display = 'none';
+  document.getElementById('gate').style.display = 'block';
+  setStatus('');
+}
+
+function setStatus(msg, isError) {
+  const el = document.getElementById('gate-status');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.color = isError ? 'var(--r)' : 'var(--muted)';
+}
+
+function isAdminFromSession(session) {
+  // Supabase puts the JWT's app_metadata onto the user object; we look for is_admin: true
+  // (set via raw_app_meta_data in SQL).
+  return session?.user?.app_metadata?.is_admin === true;
+}
+
+async function bootAuth() {
+  const { data: { session } } = await supa.auth.getSession();
+  if (!session) {
+    document.getElementById('gate').style.display = 'block';
+    document.getElementById('panel').style.display = 'none';
+    return;
+  }
+  if (!isAdminFromSession(session)) {
+    setStatus('Signed in but this account is not an admin.', true);
+    document.getElementById('gate').style.display = 'block';
+    document.getElementById('panel').style.display = 'none';
+    return;
+  }
+  state.user = session.user;
+  showPanel();
+}
+
+function showPanel() {
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('panel').style.display = 'block';
+
+  const meta = state.user.user_metadata || {};
+  const name = meta.full_name || meta.name || state.user.email;
+  const avatar = meta.avatar_url || meta.picture;
+  const initial = (name?.[0] || '?').toUpperCase();
+
+  const av = document.getElementById('me-avatar');
+  av.innerHTML = avatar ? `<img src="${avatar}" alt="">` : initial;
+  document.getElementById('me-who').innerHTML = `<b>${escapeHtml(name)}</b><br>${escapeHtml(state.user.email || '')}`;
+
+  setTab('pending');
+}
+
+supa.auth.onAuthStateChange((_event, session) => {
+  if (session) {
+    if (isAdminFromSession(session)) {
+      state.user = session.user;
+      showPanel();
+    } else {
+      setStatus('This account is not an admin.', true);
+    }
+  } else {
+    state.user = null;
+    document.getElementById('panel').style.display = 'none';
+    document.getElementById('gate').style.display = 'block';
+  }
+});
+
+bootAuth();
 
 // ── THUMBNAIL GENERATION ──
-// On approval, downloads the original image, scales it down with Canvas API,
-// and uploads the thumbnail to fal.ai. Returns the thumbnail URL (or null on failure).
 async function generateThumbnail(imageUrl, maxDim = 600) {
   try {
     const img = await new Promise((resolve, reject) => {
@@ -133,23 +231,17 @@ async function generateThumbnail(imageUrl, maxDim = 600) {
       im.onerror = () => reject(new Error('thumbnail source load failed'));
       im.src = imageUrl;
     });
-
-    // Compute scaled dimensions (preserve aspect ratio)
     const ratio = Math.min(maxDim / img.width, maxDim / img.height, 1);
     const w = Math.round(img.width * ratio);
     const h = Math.round(img.height * ratio);
-
     const canvas = document.createElement('canvas');
     canvas.width = w; canvas.height = h;
     const ctx = canvas.getContext('2d');
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(img, 0, 0, w, h);
-
-    // JPEG @ quality 0.82 — much smaller than PNG, near-imperceptible quality loss
     const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.82));
     if (!blob) throw new Error('canvas.toBlob returned null');
-
     const fd = new FormData();
     fd.append('file', blob, `thumb_${Date.now()}.jpg`);
     const res = await fetch(`${API}/api/upload`, { method: 'POST', body: fd });
@@ -161,31 +253,6 @@ async function generateThumbnail(imageUrl, maxDim = 600) {
     return null;
   }
 }
-
-// ── PIN GATE ──
-function checkPin() {
-  const v = document.getElementById('pin-input').value.trim();
-  if (v === ADMIN_PIN) {
-    sessionStorage.setItem('cm_admin', '1');
-    document.getElementById('gate').style.display = 'none';
-    document.getElementById('panel').style.display = 'block';
-    setTab('pending');
-  } else {
-    toast('Wrong PIN', 'err');
-  }
-}
-function logout() {
-  sessionStorage.removeItem('cm_admin');
-  location.reload();
-}
-if (sessionStorage.getItem('cm_admin') === '1') {
-  document.getElementById('gate').style.display = 'none';
-  document.getElementById('panel').style.display = 'block';
-  setTimeout(() => setTab('pending'), 0);
-}
-document.getElementById('pin-input')?.addEventListener('keydown', e => {
-  if (e.key === 'Enter') checkPin();
-});
 
 // ── TABS ──
 function setTab(tab) {
@@ -234,8 +301,8 @@ async function loadSubmissions(status) {
 
 function renderCard(it, status) {
   const isVideo = it._type === 'video';
-  const isChar = it._type === 'character';
-  const url = isVideo ? it.video_url : isChar ? it.image_url : it.image_url;
+  const isChar  = it._type === 'character';
+  const url = isVideo ? it.video_url : it.image_url;
   const media = isVideo
     ? `<video src="${url}" controls muted playsinline preload="metadata"></video>`
     : `<img src="${url}" alt="">`;
@@ -244,7 +311,7 @@ function renderCard(it, status) {
   if (status === 'pending') {
     actions = `
       <button class="btn btn-success" onclick="moderate('${it._type}','${it.id}','approved')">✓ Approve</button>
-      <button class="btn btn-danger" onclick="moderate('${it._type}','${it.id}','rejected')">✕ Reject</button>
+      <button class="btn btn-danger"  onclick="moderate('${it._type}','${it.id}','rejected')">✕ Reject</button>
     `;
   } else if (status === 'approved') {
     actions = `<button class="btn btn-ghost" onclick="moderate('${it._type}','${it.id}','rejected')">Remove from gallery</button>`;
@@ -271,25 +338,19 @@ function renderCard(it, status) {
 async function moderate(type, id, newStatus) {
   const table = type === 'image' ? 'images' : type === 'video' ? 'videos' : 'characters';
   try {
-    // 1) Update the source row's gallery_status
     const { error: e1 } = await supa.from(table).update({ gallery_status: newStatus }).eq('id', id);
     if (e1) throw e1;
 
-    // 2) If approved → ensure showcase entry exists. If not approved → remove from showcase.
     if (newStatus === 'approved') {
-      // Get the row to get its url
       const { data: row } = await supa.from(table).select('*').eq('id', id).single();
       const url = type === 'video' ? row.video_url : row.image_url;
 
-      // For images & characters → generate a small thumbnail to speed up the gallery.
-      // Videos still use their full URL (browsers stream metadata).
       let thumbnailUrl = null;
       if (type === 'image' || type === 'character') {
         toast('Generating thumbnail...', 'ok');
         thumbnailUrl = await generateThumbnail(url, 600);
       }
 
-      // Check if an entry already exists for this source
       const { data: existing } = await supa
         .from('showcase')
         .select('id')
@@ -303,20 +364,17 @@ async function moderate(type, id, newStatus) {
         });
         if (e2) throw e2;
       } else {
-        // Re-activate (and update thumbnail if we generated one)
         const update = { is_active: true };
         if (thumbnailUrl) update.thumbnail_url = thumbnailUrl;
         await supa.from('showcase').update(update).eq('id', existing.id);
       }
       toast('Approved & added to gallery ✓', 'ok');
     } else {
-      // Remove (deactivate) from showcase
       await supa.from('showcase').update({ is_active: false })
         .eq('source_type', type).eq('source_id', id);
       toast(newStatus === 'rejected' ? 'Rejected & removed' : 'Updated', 'ok');
     }
 
-    // Reload current view
     setTab(state.tab);
   } catch (e) {
     console.error('[moderate]', e);
@@ -324,7 +382,7 @@ async function moderate(type, id, newStatus) {
   }
 }
 
-// ── LIVE GALLERY (current showcase entries) ──
+// ── LIVE GALLERY ──
 async function loadGallery() {
   const content = document.getElementById('content');
   content.innerHTML = '<div class="loading">Loading gallery...</div>';
@@ -342,8 +400,8 @@ async function loadGallery() {
 
     const grouped = {
       character: items.filter(i => i.type === 'character'),
-      image: items.filter(i => i.type === 'image'),
-      video: items.filter(i => i.type === 'video'),
+      image:     items.filter(i => i.type === 'image'),
+      video:     items.filter(i => i.type === 'video'),
     };
 
     content.innerHTML = ['character', 'image', 'video'].map(t => {
@@ -357,7 +415,7 @@ async function loadGallery() {
               <div class="gli">
                 ${it.type === 'video'
                   ? `<video src="${it.url}" muted playsinline></video>`
-                  : `<img src="${it.url}">`}
+                  : `<img src="${it.thumbnail_url || it.url}">`}
                 <button class="gli-rm" onclick="removeFromGallery('${it.id}')" title="Remove">✕</button>
               </div>
             `).join('')}
