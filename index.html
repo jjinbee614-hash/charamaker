@@ -171,6 +171,29 @@ input:focus,textarea:focus,select:focus{border-color:rgba(167,139,250,.5)}
 .trait-row-label{font-weight:700;color:var(--v);min-width:70px;flex-shrink:0;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;padding-top:.05rem}
 .trait-row-value{color:var(--white);opacity:.85;flex:1}
 
+/* Auth */
+.auth-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:9999;backdrop-filter:blur(8px)}
+.auth-modal-bg.show{display:flex}
+.auth-modal{background:var(--s1);border:1px solid var(--border);border-radius:16px;padding:2.2rem 2rem;max-width:380px;width:90%;text-align:center}
+.auth-modal-title{font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:800;margin-bottom:.4rem;letter-spacing:-.02em}
+.auth-modal-sub{color:var(--muted);font-size:.88rem;margin-bottom:1.5rem;line-height:1.5}
+.btn-google{display:flex;align-items:center;justify-content:center;gap:.7rem;width:100%;padding:.85rem 1rem;background:#fff;color:#1f1f1f;border:none;border-radius:10px;cursor:pointer;font-family:inherit;font-weight:600;font-size:.95rem;transition:transform .15s}
+.btn-google:hover{transform:translateY(-1px)}
+.btn-google svg{width:18px;height:18px}
+.auth-modal-close{margin-top:1rem;background:transparent;border:none;color:var(--muted);font-size:.78rem;cursor:pointer;font-family:inherit}
+.auth-modal-close:hover{color:var(--white)}
+
+/* Sidebar user widget */
+.sb-user{margin-top:auto;padding:.7rem;border-top:1px solid var(--border);display:flex;align-items:center;gap:.6rem;cursor:pointer;border-radius:8px;transition:background .15s}
+.sb-user:hover{background:var(--s2)}
+.sb-user-avatar{width:32px;height:32px;border-radius:50%;background:var(--s3);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.85rem;color:var(--muted)}
+.sb-user-avatar img{width:100%;height:100%;object-fit:cover}
+.sb-user-meta{flex:1;min-width:0}
+.sb-user-name{font-size:.82rem;font-weight:600;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-user-action{font-size:.7rem;color:var(--muted)}
+.sb-signin{margin-top:auto;padding:.7rem .9rem;border:1px solid var(--border);background:transparent;color:var(--white);border-radius:8px;cursor:pointer;font-family:inherit;font-size:.85rem;font-weight:600;transition:all .15s}
+.sb-signin:hover{border-color:var(--v);color:var(--v)}
+
 /* Aspect ratio selector */
 .ratio-row{display:grid;grid-template-columns:repeat(4,1fr);gap:.4rem}
 .ratio-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.3rem;padding:.7rem .3rem;background:var(--s2);border:1.5px solid var(--border);border-radius:10px;cursor:pointer;color:var(--white);font-family:'DM Sans',sans-serif;transition:all .15s}
@@ -284,6 +307,19 @@ input:focus,textarea:focus,select:focus{border-color:rgba(167,139,250,.5)}
   <div class="modal-content" id="modal-content" onclick="event.stopPropagation()"></div>
 </div>
 
+<!-- ════════ AUTH MODAL ════════ -->
+<div class="auth-modal-bg" id="auth-modal" onclick="closeAuthModal()">
+  <div class="auth-modal" onclick="event.stopPropagation()">
+    <div class="auth-modal-title">Sign in to continue</div>
+    <div class="auth-modal-sub" id="auth-modal-sub">Create your AI character with a free account.<br>You can keep your work in one place.</div>
+    <button class="btn-google" onclick="signInWithGoogle()">
+      <svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3c-1.6 4.6-6 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34.5 6.5 29.5 4.5 24 4.5 12.7 4.5 3.5 13.7 3.5 25S12.7 45.5 24 45.5 44.5 36.3 44.5 25c0-1.7-.2-3.3-.5-4.9z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34.5 6.5 29.5 4.5 24 4.5 16.3 4.5 9.7 8.7 6.3 14.7z"/><path fill="#4CAF50" d="M24 45.5c5.4 0 10.3-2.1 14-5.4l-6.5-5.5C29.6 36 26.9 37 24 37c-5.3 0-9.8-3.4-11.4-8L6 33.7C9.4 39.8 16.2 45.5 24 45.5z"/><path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4 5.6l6.5 5.5c-.5.4 6.7-4.9 6.7-14.1 0-1.7-.2-3.3-.5-4.9z"/></svg>
+      Continue with Google
+    </button>
+    <button class="auth-modal-close" onclick="closeAuthModal()">Maybe later</button>
+  </div>
+</div>
+
 <!-- ════════ HOME ════════ -->
 <section class="home" id="home-page">
   <div class="home-logo">CharaMaker</div>
@@ -340,6 +376,7 @@ input:focus,textarea:focus,select:focus{border-color:rgba(167,139,250,.5)}
         <span class="sb-tab-icon">📚</span>History
       </button>
     </div>
+    <div id="sb-user-area"></div>
     <div class="sb-bottom">v2 · Powered by Anthropic & fal.ai</div>
   </aside>
 
@@ -566,6 +603,7 @@ const supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 // ═══════════════════════════════════════════════════════════
 const S = {
   tab: 'character',
+  user: null,       // current authenticated user (null when signed out)
   characters: [],   // all loaded characters
   ccCharacter: null,    // currently designed character (not yet saved)
   ccRefImageUrl: null,  // reference for character creation
@@ -578,6 +616,109 @@ const S = {
   lastImage: null,
   lastVideo: null,
 };
+
+// ═══════════════════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════════════════
+
+// Open the auth modal. Optional `reason` shows what action triggered the prompt.
+function openAuthModal(reason) {
+  const sub = document.getElementById('auth-modal-sub');
+  if (sub) {
+    sub.innerHTML = reason
+      ? `${reason}<br><span style="font-size:.8rem;opacity:.7">Sign in to continue.</span>`
+      : 'Create your AI character with a free account.<br>You can keep your work in one place.';
+  }
+  document.getElementById('auth-modal').classList.add('show');
+}
+function closeAuthModal() {
+  document.getElementById('auth-modal').classList.remove('show');
+}
+
+async function signInWithGoogle() {
+  try {
+    const { error } = await supa.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin + window.location.pathname },
+    });
+    if (error) throw error;
+  } catch (e) {
+    console.error('[auth] sign in failed:', e);
+    toast('Sign in failed: ' + (e.message || ''), 'err');
+  }
+}
+
+async function signOut() {
+  try {
+    await supa.auth.signOut();
+    S.user = null;
+    S.characters = [];
+    renderUserWidget();
+    goHome();
+    toast('Signed out');
+  } catch (e) {
+    console.error('[auth] sign out failed:', e);
+  }
+}
+
+// Require login before running an action. Returns true if logged in,
+// otherwise opens the auth modal and returns false.
+function requireAuth(reason) {
+  if (S.user) return true;
+  openAuthModal(reason);
+  return false;
+}
+
+// Render the bottom-of-sidebar user widget based on auth state.
+function renderUserWidget() {
+  const el = document.getElementById('sb-user-area');
+  if (!el) return;
+  if (S.user) {
+    const meta = S.user.user_metadata || {};
+    const name = meta.full_name || meta.name || S.user.email || 'You';
+    const avatar = meta.avatar_url || meta.picture;
+    const initial = (name[0] || '?').toUpperCase();
+    el.innerHTML = `
+      <div class="sb-user" onclick="signOut()" title="Click to sign out">
+        <div class="sb-user-avatar">${avatar ? `<img src="${avatar}" alt="">` : initial}</div>
+        <div class="sb-user-meta">
+          <div class="sb-user-name">${escapeHtmlOrReturn(name)}</div>
+          <div class="sb-user-action">Sign out</div>
+        </div>
+      </div>
+    `;
+  } else {
+    el.innerHTML = `<button class="sb-signin" onclick="openAuthModal()">Sign in with Google</button>`;
+  }
+}
+
+// Tiny escape (escapeHtml is defined later for the gallery)
+function escapeHtmlOrReturn(s) {
+  return String(s || '').replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// On boot: pull the current session and listen for changes.
+async function initAuth() {
+  const { data: { session } } = await supa.auth.getSession();
+  S.user = session?.user || null;
+  renderUserWidget();
+
+  supa.auth.onAuthStateChange((event, sess) => {
+    const wasSignedIn = !!S.user;
+    S.user = sess?.user || null;
+    renderUserWidget();
+    if (!wasSignedIn && S.user) {
+      // User just signed in — close any open auth modal and reload data
+      closeAuthModal();
+      toast(`Welcome, ${S.user.user_metadata?.name || 'friend'}! ✓`);
+      loadCharacters();
+    } else if (wasSignedIn && !S.user) {
+      // Signed out
+      S.characters = [];
+    }
+  });
+}
+initAuth();
 
 // ═══════════════════════════════════════════════════════════
 // UTILS
@@ -769,6 +910,8 @@ async function handleRefVideo(event) {
 // 1. CREATE CHARACTER
 // ═══════════════════════════════════════════════════════════
 async function createCharacter() {
+  if (!requireAuth('Sign in to design your AI character.')) return;
+
   const name = document.getElementById('cc-name').value.trim();
   const appearance = document.getElementById('cc-appearance').value.trim();
   const niche = document.getElementById('cc-niche').value.trim();
@@ -815,6 +958,7 @@ async function createCharacter() {
     console.log('[CC] saving to Supabase, imageUrl:', imageUrl);
     progShow('cc', 'Saving to your library...');
     const { data: saved, error } = await supa.from('characters').insert({
+      user_id: S.user.id,
       name: character.name,
       persona: character.persona,
       niche: character.niche,
@@ -892,6 +1036,7 @@ function renderCharacterResult(c) {
 // 2. GENERATE IMAGE
 // ═══════════════════════════════════════════════════════════
 async function generateImage() {
+  if (!requireAuth('Sign in to generate images.')) return;
   if (!S.imgSelectedProfileId) { toast('Select a profile first', 'err'); return; }
   let userPrompt = document.getElementById('img-prompt').value.trim();
   const hasRef = !!S.imgRefImageUrl;
@@ -972,6 +1117,7 @@ async function generateImage() {
 
     // Save to Supabase and capture row id (for "Share with community")
     const { data: imgRow } = await supa.from('images').insert({
+      user_id: S.user.id,
       character_id: profile.id,
       image_url: url,
       prompt,
@@ -998,6 +1144,7 @@ async function generateImage() {
 // 3. GENERATE VIDEO
 // ═══════════════════════════════════════════════════════════
 async function generateVideo() {
+  if (!requireAuth('Sign in to generate videos.')) return;
   if (!S.vidSelectedProfileId) { toast('Select a profile first', 'err'); return; }
   if (!S.vidRefVideoUrl) { toast('Upload a reference video', 'err'); return; }
 
@@ -1032,6 +1179,7 @@ async function generateVideo() {
 
     // Save and capture row id
     const { data: vidRow } = await supa.from('videos').insert({
+      user_id: S.user.id,
       character_id: profile.id,
       video_url: url,
       reference_video_url: S.vidRefVideoUrl,
@@ -1191,6 +1339,9 @@ async function pollJob(modelPath, requestId, progPrefix, msg, statusUrl) {
 // CHARACTERS / HISTORY
 // ═══════════════════════════════════════════════════════════
 async function loadCharacters() {
+  // Without auth, the user has no characters of their own — RLS will return 0 rows.
+  // Skip the network call to keep things snappy and avoid noisy errors.
+  if (!S.user) { S.characters = []; return; }
   try {
     const { data, error } = await supa.from('characters').select('*').order('created_at', { ascending: false });
     if (error) throw error;
@@ -1314,6 +1465,10 @@ async function extendImageToAspect(imageUrl, aspectRatio) {
 }
 
 async function handleExtraImageUpload(event, prefix) {
+  if (!requireAuth('Sign in to upload custom images.')) {
+    event.target.value = '';
+    return;
+  }
   const file = event.target.files?.[0];
   if (!file) return;
   if (file.size > 20 * 1024 * 1024) { toast('Image too large. Max 20MB.', 'err'); return; }
@@ -1329,6 +1484,7 @@ async function handleExtraImageUpload(event, prefix) {
     // Step 2: save as a lightweight character record (image only, no persona)
     const tempName = `Upload ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
     const { data: saved, error } = await supa.from('characters').insert({
+      user_id: S.user.id,
       name: tempName,
       persona: '',
       niche: '',
@@ -1599,6 +1755,7 @@ function refreshShareButton(prefix) {
 }
 
 async function shareCharacter() {
+  if (!requireAuth('Sign in to share with the community.')) return;
   if (!S.ccCharacter?.id) { toast('No character to share', 'err'); return; }
   if (!confirm('Share this character with the community?\n\nIt will be reviewed before appearing in the public gallery.')) return;
 
@@ -1623,6 +1780,7 @@ async function shareCharacter() {
 }
 
 async function shareToGallery(type) {
+  if (!requireAuth('Sign in to share with the community.')) return;
   const prefix = type === 'image' ? 'img' : 'vid';
   const table = type === 'image' ? 'images' : 'videos';
   const rowId = prefix === 'img' ? S.lastImageRowId : S.lastVideoRowId;
