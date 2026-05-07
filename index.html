@@ -1131,6 +1131,68 @@ function closeModal() {
   document.getElementById('modal').classList.remove('show');
 }
 
+// ── History modal: media + Share-to-gallery button + close-on-outside ──
+// Used when the user clicks any item in the History tab. Lets them share old work.
+function openHistoryModal(type, id, url, status) {
+  const isVideo = type === 'video';
+  const isCharacter = type === 'character';
+
+  const media = isVideo
+    ? `<video src="${url}" controls loop autoplay style="max-width:90vw;max-height:80vh;display:block;border-radius:14px;margin:0 auto"></video>`
+    : `<img src="${url}" style="max-width:90vw;max-height:80vh;display:block;border-radius:14px;margin:0 auto">`;
+
+  // Share button reflects current status
+  let shareBtn = '';
+  if (S.user) {
+    const stat = status || 'none';
+    if (stat === 'pending') {
+      shareBtn = `<button class="btn btn-ghost" disabled style="opacity:.7">⏳ Pending review</button>`;
+    } else if (stat === 'approved') {
+      shareBtn = `<button class="btn btn-ghost" disabled style="opacity:.7">✓ Live in gallery</button>`;
+    } else if (stat === 'rejected') {
+      shareBtn = `<button class="btn btn-ghost" disabled style="opacity:.5">— Not added to gallery</button>`;
+    } else {
+      shareBtn = `<button class="btn btn-grad" onclick="shareFromHistory('${type}','${id}')">🌟 Share to gallery</button>`;
+    }
+  }
+
+  const dlBtn = `<a href="${url}" download class="btn btn-ghost" target="_blank">⬇ Download</a>`;
+
+  document.getElementById('modal-content').innerHTML = `
+    <div style="background:var(--s1);border-radius:14px;padding:1rem;max-width:90vw">
+      ${media}
+      <div style="display:flex;gap:.6rem;justify-content:center;margin-top:.9rem;flex-wrap:wrap">
+        ${dlBtn}
+        ${shareBtn}
+      </div>
+    </div>
+  `;
+  document.getElementById('modal').classList.add('show');
+}
+
+// Share a row from the History tab (instead of the result screen).
+// Reuses the same gallery_status -> 'pending' update pattern.
+async function shareFromHistory(type, id) {
+  if (!requireAuth('Sign in to share to the gallery.')) return;
+  if (!confirm('Share this to the public gallery?\n\nIt will be reviewed before appearing in the gallery.')) return;
+
+  const table = type === 'video' ? 'videos' : type === 'image' ? 'images' : 'characters';
+  try {
+    const { error } = await supa.from(table).update({
+      submitted_to_gallery: true,
+      submitted_at: new Date().toISOString(),
+      gallery_status: 'pending',
+    }).eq('id', id);
+    if (error) throw error;
+    closeModal();
+    toast('Submitted! We\'ll review it shortly ✓');
+    loadCharacters(); // refresh history
+  } catch (e) {
+    console.error('[shareFromHistory]', e);
+    toast('Submit failed: ' + (e.message || ''), 'err');
+  }
+}
+
 // ═══════════════════════════════════════════════════════════
 // NAVIGATION
 // ═══════════════════════════════════════════════════════════
@@ -2072,7 +2134,7 @@ async function loadHistory() {
           <div class="char-group-section">
             <div class="char-group-section-title">Profile</div>
             <div class="history-grid">
-              <div class="history-card" onclick="openModal('<img src=\\'${c.image_url}\\'>')">
+              <div class="history-card" onclick="openHistoryModal('character','${c.id}','${c.image_url}','${c.gallery_status || 'none'}')">
                 <div class="history-thumb"><img src="${c.image_url}"></div>
                 <div class="history-info">
                   <div class="history-name">${c.name || 'Profile'}</div>
@@ -2112,7 +2174,7 @@ async function loadHistory() {
                       </div>`;
                   }
                   return `
-                    <div class="history-card" onclick="openModal('<img src=\\'${i.image_url}\\'>')">
+                    <div class="history-card" onclick="openHistoryModal('image','${i.id}','${i.image_url}','${i.gallery_status || 'none'}')">
                       <button class="history-del" onclick="event.stopPropagation();deleteAsset('image','${i.id}')" title="Delete">✕</button>
                       <div class="history-thumb"><img src="${i.image_url}"></div>
                       <div class="history-info">
@@ -2155,7 +2217,7 @@ async function loadHistory() {
                       </div>`;
                   }
                   return `
-                    <div class="history-card" onclick="openModal('<video src=\\'${v.video_url}\\' controls loop autoplay>')">
+                    <div class="history-card" onclick="openHistoryModal('video','${v.id}','${v.video_url}','${v.gallery_status || 'none'}')">
                       <button class="history-del" onclick="event.stopPropagation();deleteAsset('video','${v.id}')" title="Delete">✕</button>
                       <div class="history-thumb"><video src="${v.video_url}" muted></video></div>
                       <div class="history-info">
