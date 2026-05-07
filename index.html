@@ -436,7 +436,7 @@ input:focus,textarea:focus,select:focus{border-color:rgba(167,139,250,.5)}
     <div class="credits-modal-title">Out of credits</div>
     <div class="credits-modal-msg" id="credits-modal-msg"></div>
     <div class="credits-modal-actions">
-      <button class="btn-upgrade" onclick="alert('Pricing page coming soon!')">View Plans</button>
+      <button class="btn-upgrade" onclick="window.location.href='/pricing'">View Plans</button>
       <button class="btn-upgrade-ghost" onclick="closeCreditsModal()">Close</button>
     </div>
   </div>
@@ -450,7 +450,8 @@ input:focus,textarea:focus,select:focus{border-color:rgba(167,139,250,.5)}
     <div class="home-logo">CharaMaker</div>
     <div class="home-topbar-actions">
       <span class="home-topbar-link" onclick="document.getElementById('home-showcase-section').scrollIntoView({behavior:'smooth'})">Gallery</span>
-      <span class="home-topbar-link" onclick="document.getElementById('home-how-section').scrollIntoView({behavior:'smooth'})">How it works</span>
+      <a class="home-topbar-link" href="/guide" style="text-decoration:none">Guide</a>
+      <a class="home-topbar-link" href="/pricing" style="text-decoration:none">Pricing</a>
       <button class="home-topbar-cta" onclick="openStudio()">Open Studio →</button>
     </div>
   </div>
@@ -544,7 +545,8 @@ input:focus,textarea:focus,select:focus{border-color:rgba(167,139,250,.5)}
     <div class="home-footer-row">
       <span onclick="openStudio()">Studio</span>
       <span onclick="document.getElementById('home-showcase-section').scrollIntoView({behavior:'smooth'})">Gallery</span>
-      <span onclick="document.getElementById('home-how-section').scrollIntoView({behavior:'smooth'})">How it works</span>
+      <a href="/guide" style="text-decoration:none;color:inherit;cursor:pointer">Guide</a>
+      <a href="/pricing" style="text-decoration:none;color:inherit;cursor:pointer">Pricing</a>
     </div>
     <div>© CharaMaker · Powered by Anthropic, xAI Grok, Atlas Cloud & fal.ai</div>
   </div>
