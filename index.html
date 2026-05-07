@@ -548,7 +548,7 @@ input:focus,textarea:focus,select:focus{border-color:rgba(167,139,250,.5)}
       <a href="/guide" style="text-decoration:none;color:inherit;cursor:pointer">Guide</a>
       <a href="/pricing" style="text-decoration:none;color:inherit;cursor:pointer">Pricing</a>
     </div>
-    <div>© CharaMaker · Powered by Anthropic, xAI Grok, Atlas Cloud & fal.ai</div>
+    <div>© 2026 CharaMaker. All rights reserved.</div>
   </div>
 
 </section>
@@ -575,7 +575,7 @@ input:focus,textarea:focus,select:focus{border-color:rgba(167,139,250,.5)}
     </div>
     <div id="sb-credits" class="sb-credits" style="display:none"></div>
     <div id="sb-user-area"></div>
-    <div class="sb-bottom">v2 · Powered by Anthropic & fal.ai</div>
+    <div class="sb-bottom">v2 · CharaMaker</div>
   </aside>
 
   <!-- Main content -->
@@ -2068,7 +2068,7 @@ async function extendImageToAspect(imageUrl, aspectRatio) {
   // Step 2: draw the original image on top in its centered position
   ctx.drawImage(img, drawX, drawY, drawW, drawH);
 
-  // Convert to Blob and upload to fal.ai
+  // Convert to Blob and upload to our storage
   const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png', 0.92));
   const fd = new FormData();
   fd.append('file', blob, `profile_${aspectRatio.replace(':', 'x')}.png`);
