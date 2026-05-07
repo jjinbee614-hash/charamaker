@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guide — CharaMaker</title>
+
+<meta name="description" content="Master CharaMaker — learn how to design AI characters, generate images, and produce viral motion-transfer videos.">
+<meta name="theme-color" content="#a78bfa">
+<link rel="canonical" href="https://charamaker.app/guide">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="Guide — CharaMaker">
+<meta property="og:description" content="Step-by-step guide to creating AI characters and viral content with CharaMaker.">
+<meta property="og:url" content="https://charamaker.app/guide">
+<meta property="og:image" content="https://charamaker.app/og-image.png">
+
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0a0f;--s1:#13131c;--s2:#1a1a26;--s3:#22222e;--border:#2a2a38;--white:#fafafa;--muted:#9ca3af;--v:#a78bfa;--p:#f472b6;--g:#34d399;--r:#f87171;--grad:linear-gradient(135deg,#a78bfa 0%,#f472b6 100%)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--white);min-height:100vh;line-height:1.7}
+a{color:inherit;text-decoration:none}
+
+/* Top bar */
+.topbar{display:flex;justify-content:space-between;align-items:center;padding:1.5rem 2rem;max-width:1280px;margin:0 auto}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.3rem;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-.02em;cursor:pointer}
+.topbar-links{display:flex;align-items:center;gap:.6rem}
+.topbar-link{color:var(--muted);font-size:.85rem;font-weight:500;cursor:pointer;padding:.5rem .9rem;border-radius:8px;transition:all .15s}
+.topbar-link:hover{color:var(--white)}
+.topbar-link.active{color:var(--white)}
+.topbar-cta{background:var(--grad);color:#fff;padding:.55rem 1.2rem;border-radius:100px;border:none;font-family:inherit;font-weight:700;font-size:.85rem;cursor:pointer;transition:transform .15s}
+.topbar-cta:hover{transform:translateY(-1px)}
+
+/* Hero */
+.hero{padding:4rem 2rem 2rem;text-align:center;max-width:800px;margin:0 auto}
+.hero-pill{display:inline-flex;align-items:center;gap:.5rem;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.25);color:var(--v);padding:.35rem 1.1rem;border-radius:100px;font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:1.5rem}
+.hero h1{font-family:'Syne',sans-serif;font-size:clamp(2.2rem,5vw,3.6rem);font-weight:800;letter-spacing:-.03em;line-height:1.1;margin-bottom:1rem}
+.hero h1 .gr{background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hero p{font-size:1.05rem;color:var(--muted);max-width:620px;margin:0 auto;line-height:1.6}
+
+/* Content layout */
+.layout{display:grid;grid-template-columns:240px 1fr;gap:3rem;max-width:1180px;margin:3rem auto;padding:0 2rem}
+@media (max-width:880px){.layout{grid-template-columns:1fr;gap:2rem}.toc{position:static !important}}
+
+/* TOC sidebar */
+.toc{position:sticky;top:1.5rem;align-self:start;background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:1.2rem 1rem;font-size:.85rem}
+.toc-title{font-family:'Syne',sans-serif;font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.7rem;padding-left:.5rem}
+.toc ul{list-style:none}
+.toc li{padding:.4rem .5rem;color:var(--muted);cursor:pointer;border-radius:6px;line-height:1.4;transition:all .15s}
+.toc li:hover{color:var(--white);background:var(--s2)}
+.toc li b{color:var(--v);font-family:'Syne',sans-serif;font-weight:700;margin-right:.4rem;letter-spacing:-.02em}
+
+/* Article body */
+.article{font-size:1rem;color:var(--white);line-height:1.75}
+.article h2{font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:800;letter-spacing:-.02em;margin:3rem 0 .5rem;display:flex;align-items:baseline;gap:.7rem}
+.article h2:first-child{margin-top:0}
+.article h2 .num{color:var(--v);font-size:1.2rem;font-weight:700;letter-spacing:.02em}
+.article h3{font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:700;letter-spacing:-.01em;margin:2rem 0 .7rem;color:var(--white)}
+.article p{color:var(--muted);margin-bottom:1rem}
+.article ul,.article ol{color:var(--muted);margin:.7rem 0 1.2rem 1.4rem;padding-left:.5rem}
+.article li{margin-bottom:.4rem;line-height:1.65}
+.article li::marker{color:var(--v)}
+.article b,.article strong{color:var(--white);font-weight:600}
+.article code{background:var(--s2);padding:.15em .4em;border-radius:4px;font-family:'JetBrains Mono','Courier New',monospace;font-size:.86em;color:var(--v)}
+.article .tip{background:var(--s1);border:1px solid var(--border);border-left:3px solid var(--v);padding:1rem 1.2rem;border-radius:8px;margin:1.5rem 0;font-size:.92rem}
+.article .tip b{color:var(--v);font-family:'Syne',sans-serif;letter-spacing:-.01em}
+.article .example{background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:1rem 1.2rem;margin:1rem 0;font-family:'JetBrains Mono','Courier New',monospace;font-size:.84rem;color:var(--white);line-height:1.6;white-space:pre-wrap;word-break:break-word}
+.article .example-title{font-family:'DM Sans',sans-serif;font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5rem}
+
+/* Footer */
+.footer{padding:3rem 2rem 2.5rem;border-top:1px solid var(--border);text-align:center;color:var(--muted);font-size:.78rem;max-width:1280px;margin:4rem auto 0}
+.footer-row{display:flex;justify-content:center;gap:1.5rem;margin-bottom:.7rem;flex-wrap:wrap}
+.footer-row a{cursor:pointer;transition:color .15s}
+.footer-row a:hover{color:var(--white)}
+
+/* Smooth scroll */
+html{scroll-behavior:smooth}
+:target{scroll-margin-top:1.5rem}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a class="logo" href="/">CharaMaker</a>
+  <div class="topbar-links">
+    <a class="topbar-link active" href="/guide">Guide</a>
+    <a class="topbar-link" href="/pricing">Pricing</a>
+    <a class="topbar-cta" href="/">Open Studio →</a>
+  </div>
+</div>
+
+<section class="hero">
+  <div class="hero-pill">GUIDE</div>
+  <h1>Master <span class="gr">CharaMaker</span><br>in 10 minutes.</h1>
+  <p>Step-by-step walkthrough to design AI characters, generate scene images, and produce viral motion-transfer videos.</p>
+</section>
+
+<div class="layout">
+
+  <!-- TOC -->
+  <aside class="toc">
+    <div class="toc-title">Contents</div>
+    <ul>
+      <li onclick="document.getElementById('s1').scrollIntoView()"><b>01</b>Getting started</li>
+      <li onclick="document.getElementById('s2').scrollIntoView()"><b>02</b>Designing a character</li>
+      <li onclick="document.getElementById('s3').scrollIntoView()"><b>03</b>Generating images</li>
+      <li onclick="document.getElementById('s4').scrollIntoView()"><b>04</b>Generating videos</li>
+      <li onclick="document.getElementById('s5').scrollIntoView()"><b>05</b>SNS captions</li>
+      <li onclick="document.getElementById('s6').scrollIntoView()"><b>06</b>Sharing to gallery</li>
+      <li onclick="document.getElementById('s7').scrollIntoView()"><b>07</b>Prompt tips</li>
+    </ul>
+  </aside>
+
+  <!-- Content -->
+  <article class="article">
+
+    <h2 id="s1"><span class="num">01</span> Getting started</h2>
+    <p>CharaMaker is a creative studio for designing AI characters and turning them into images and motion-transfer videos. Here's the basic flow:</p>
+    <ol>
+      <li><b>Sign in with Google.</b> New accounts get 500 free credits to try the studio.</li>
+      <li><b>Design your character.</b> Give it a name, vibe, niche, and look — the AI fills in the rest and creates a profile image.</li>
+      <li><b>Generate scene images.</b> Place your character in any setting, with consistent face and identity.</li>
+      <li><b>Generate motion videos.</b> Upload a reference video — your character performs the same motion.</li>
+      <li><b>Caption + share.</b> Auto-generate platform-ready captions and post to your channels.</li>
+    </ol>
+    <div class="tip"><b>💡 Free credit tip</b><br>Your 500 starter credits are enough for ~1 character + 2 image generations. Make them count.</div>
+
+    <h2 id="s2"><span class="num">02</span> Designing a character</h2>
+    <p>Open the studio and go to the <b>Create Character</b> tab. You'll see four input fields, all optional:</p>
+    <ul>
+      <li><b>Name</b> — leave blank for AI to suggest one (e.g., Mira, Suki, Faye)</li>
+      <li><b>Niche</b> — what they post about (e.g., fashion, gaming, K-pop, fitness)</li>
+      <li><b>Persona</b> — personality traits, voice, vibe</li>
+      <li><b>Appearance</b> — physical look, age, ethnicity, style</li>
+    </ul>
+
+    <h3>How to write a strong appearance</h3>
+    <p>The AI honors your wording, so be specific about the things that matter to you. Vague inputs let the AI improvise.</p>
+    <div class="example-title">Vague — AI improvises:</div>
+    <div class="example">cute girl, K-pop style</div>
+    <div class="example-title">Specific — AI follows closely:</div>
+    <div class="example">early 20s Japanese woman, doll-like delicate face, slim tall figure, long straight black hair with bangs, wearing Y2K streetwear, K-pop idol aesthetic</div>
+
+    <h3>Reference image (optional)</h3>
+    <p>Upload a reference photo to anchor the visual style. The AI extracts the appearance (clothing, hair, vibe) without copying the face — useful when you have a specific aesthetic in mind.</p>
+
+    <div class="tip"><b>⚠️ Real-person names</b><br>Mentions like "looks like Wonyoung" are abstracted into descriptive features (slim tall figure, doll-like face, etc.) to respect privacy and avoid copyright issues.</div>
+
+    <h2 id="s3"><span class="num">03</span> Generating images</h2>
+    <p>Switch to the <b>Generate Image</b> tab. Pick a character profile, write a scene prompt, and choose an aspect ratio.</p>
+
+    <h3>Aspect ratios</h3>
+    <ul>
+      <li><b>Auto</b> — follows the input image (defaults to 1:1)</li>
+      <li><b>1:1</b> — square, ideal for Instagram feed</li>
+      <li><b>9:16</b> — vertical, ideal for Reels, TikTok, Stories</li>
+      <li><b>16:9</b> — horizontal, ideal for YouTube thumbnails</li>
+    </ul>
+
+    <h3>How to write a scene prompt</h3>
+    <p>Describe the <b>scene, pose, clothing, and mood</b>. Don't repeat the character's appearance — the AI already preserves face and hair from the profile.</p>
+    <div class="example-title">Good prompt:</div>
+    <div class="example">sitting at a Brooklyn rooftop café at golden hour, wearing a cream silk slip dress, holding an iced matcha, candid laughter, warm soft lighting</div>
+
+    <h3>Reference image (optional)</h3>
+    <p>Upload any image — the AI analyzes it and uses its style/scene/composition for your generation. The face still belongs to your character.</p>
+
+    <div class="tip"><b>💡 Identity is preserved automatically</b><br>You don't need to write "same face as before" — the system locks the character's identity. Focus your prompt on the new scene.</div>
+
+    <h2 id="s4"><span class="num">04</span> Generating videos</h2>
+    <p>The <b>Generate Video</b> tab does motion transfer. You provide:</p>
+    <ol>
+      <li>A <b>character profile</b> (the face you want)</li>
+      <li>A <b>reference video</b> (the motion you want, max 15 seconds)</li>
+    </ol>
+    <p>The system extracts a frame, swaps in your character's face and hairstyle, then animates the entire clip with your character performing the original motion.</p>
+
+    <h3>What works best</h3>
+    <ul>
+      <li>Clear face visibility in the first frame</li>
+      <li>Single subject (the swap targets one person)</li>
+      <li>Steady camera, full body or upper body</li>
+      <li>5-10 second clips for crisp results — longer clips can drift</li>
+    </ul>
+
+    <h3>What to avoid</h3>
+    <ul>
+      <li>Multiple people in frame (face swap may pick the wrong one)</li>
+      <li>Heavy occlusion (hands covering face, sunglasses, hats)</li>
+      <li>Very fast motion (motion blur degrades face detail)</li>
+    </ul>
+
+    <div class="tip"><b>⏱️ Generation takes 5-10 minutes</b><br>You can leave the page or open new tabs — your video will keep generating in the background. Check the History tab when you return.</div>
+
+    <h2 id="s5"><span class="num">05</span> SNS captions</h2>
+    <p>After any image or video generation, click <b>"Generate captions"</b> to get post-ready captions.</p>
+    <p>You'll get <b>3 styles</b> for each of the 4 platforms:</p>
+    <ul>
+      <li><b>Instagram</b> — emoji-heavy, hashtag-rich, lifestyle voice</li>
+      <li><b>TikTok</b> — punchy, trend-aware, hook-first</li>
+      <li><b>X (Twitter)</b> — concise, witty, under 280 chars</li>
+      <li><b>YouTube</b> — descriptive, SEO-friendly, longer-form</li>
+    </ul>
+    <p>Each platform offers <b>witty / aesthetic / engaging</b> tones. Pick the one that fits your brand voice.</p>
+
+    <h2 id="s6"><span class="num">06</span> Sharing to gallery</h2>
+    <p>Help inspire other creators — and earn bonus credits.</p>
+    <ol>
+      <li>On any character / image / video, click <b>"🌟 Share to gallery"</b></li>
+      <li>Submission goes to admin review (usually approved within 24h)</li>
+      <li>Approved submissions appear in the public gallery on the homepage and inside the studio</li>
+      <li>You receive <b>+20 credits</b> for each approved submission</li>
+    </ol>
+    <p>You can also share content from the History tab anytime — click any item and the share button appears in the modal.</p>
+
+    <h2 id="s7"><span class="num">07</span> Prompt tips</h2>
+
+    <h3>Be specific, not poetic</h3>
+    <p>The model understands concrete nouns better than abstract feelings.</p>
+    <div class="example-title">Less effective:</div>
+    <div class="example">vibing in a dreamy place</div>
+    <div class="example-title">More effective:</div>
+    <div class="example">sitting on a balcony in Lisbon, white linen dress, sunset behind, hand brushing her hair back</div>
+
+    <h3>Lock the lighting</h3>
+    <p>Lighting is the #1 differentiator between amateur and professional-looking content.</p>
+    <ul>
+      <li><code>golden hour</code>, <code>blue hour</code>, <code>overcast soft light</code></li>
+      <li><code>warm window light</code>, <code>neon nightlife</code>, <code>candlelit</code></li>
+      <li><code>backlit</code>, <code>side-lit</code>, <code>rim light</code></li>
+    </ul>
+
+    <h3>Set a camera angle</h3>
+    <p>Mention the camera explicitly — close-up, medium shot, full body, low angle, over-the-shoulder, etc.</p>
+
+    <h3>Don't redescribe the character</h3>
+    <p>The system preserves your character's face and hair. Repeating "long black hair, slim figure" wastes prompt tokens and can confuse the model.</p>
+
+    <h3>Use references for style</h3>
+    <p>Style words alone ("cinematic", "editorial") are weak. Reference images speak louder than 50 adjectives.</p>
+
+    <div class="tip"><b>🚀 Pro tip — iterate fast</b><br>Image generation costs 200 credits. Generate 3-5 variations of the same scene with slight prompt tweaks (different lighting, pose, angle) — pick the best one.</div>
+
+  </article>
+</div>
+
+<footer class="footer">
+  <div class="footer-row">
+    <a href="/">Studio</a>
+    <a href="/guide">Guide</a>
+    <a href="/pricing">Pricing</a>
+  </div>
+  <div>© CharaMaker · Powered by Anthropic, xAI Grok, Atlas Cloud & fal.ai</div>
+</footer>
+
+</body>
+</html>
