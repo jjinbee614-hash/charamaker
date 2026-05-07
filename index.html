@@ -1391,9 +1391,9 @@ async function generateImage() {
   // The model gets explicit instructions to keep the input face EXACTLY,
   // and to only change the scene/clothing/pose described after.
   finalPrompt = [
-    'KEEP THE EXACT SAME FACE from the input image — preserve facial features, eye shape, nose, mouth, face proportions, skin tone, hair color, hair style, and overall identity 100% identical.',
-    'DO NOT redesign or reinterpret the face. Only change the scene, clothing, pose, and background as described below.',
-    'Photorealistic photo of the same person from the input image, in this new scene:',
+    'KEEP THE EXACT SAME PERSON from the input image — preserve facial features (eye shape, nose, mouth, face proportions), skin tone, AND hair (same color, same length, same style, same parting) 100% identical.',
+    'DO NOT redesign the face or hair. DO NOT change hair color, hair length, or hairstyle. Only change the scene, clothing, pose, and background as described below.',
+    'Photorealistic photo of the same person from the input image — same face, same hair — in this new scene:',
     finalPrompt
   ].join(' ');
 
