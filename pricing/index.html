@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pricing — CharaMaker</title>
+
+<meta name="description" content="Choose the perfect plan for creating AI characters and viral videos. Free tier available, paid plans starting from $9.99/mo.">
+<meta name="theme-color" content="#a78bfa">
+<link rel="canonical" href="https://charamaker.app/pricing">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="Pricing — CharaMaker">
+<meta property="og:description" content="Plans starting from $9.99/mo. Create AI characters, generate images, and produce viral videos.">
+<meta property="og:url" content="https://charamaker.app/pricing">
+<meta property="og:image" content="https://charamaker.app/og-image.png">
+
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0a0f;--s1:#13131c;--s2:#1a1a26;--s3:#22222e;--border:#2a2a38;--white:#fafafa;--muted:#9ca3af;--v:#a78bfa;--p:#f472b6;--g:#34d399;--r:#f87171;--grad:linear-gradient(135deg,#a78bfa 0%,#f472b6 100%)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--white);min-height:100vh;line-height:1.6}
+a{color:inherit;text-decoration:none}
+
+/* Top bar */
+.topbar{display:flex;justify-content:space-between;align-items:center;padding:1.5rem 2rem;max-width:1280px;margin:0 auto}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.3rem;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-.02em;cursor:pointer}
+.topbar-links{display:flex;align-items:center;gap:.6rem}
+.topbar-link{color:var(--muted);font-size:.85rem;font-weight:500;cursor:pointer;padding:.5rem .9rem;border-radius:8px;transition:all .15s}
+.topbar-link:hover{color:var(--white)}
+.topbar-link.active{color:var(--white)}
+.topbar-cta{background:var(--grad);color:#fff;padding:.55rem 1.2rem;border-radius:100px;border:none;font-family:inherit;font-weight:700;font-size:.85rem;cursor:pointer;transition:transform .15s}
+.topbar-cta:hover{transform:translateY(-1px)}
+
+/* Hero */
+.hero{padding:4rem 2rem 2rem;text-align:center;max-width:900px;margin:0 auto}
+.hero-pill{display:inline-flex;align-items:center;gap:.5rem;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.25);color:var(--v);padding:.35rem 1.1rem;border-radius:100px;font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:1.5rem}
+.hero h1{font-family:'Syne',sans-serif;font-size:clamp(2.2rem,5vw,3.6rem);font-weight:800;letter-spacing:-.03em;line-height:1.1;margin-bottom:1rem}
+.hero h1 .gr{background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hero p{font-size:1.05rem;color:var(--muted);max-width:640px;margin:0 auto;line-height:1.6}
+
+/* Plans grid */
+.plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem;max-width:1180px;margin:3rem auto;padding:0 2rem}
+.plan{background:var(--s1);border:1px solid var(--border);border-radius:16px;padding:1.8rem 1.5rem;display:flex;flex-direction:column;position:relative;transition:transform .25s, border-color .25s}
+.plan:hover{transform:translateY(-3px);border-color:rgba(167,139,250,.3)}
+.plan.featured{border-color:rgba(167,139,250,.5);background:linear-gradient(180deg,rgba(167,139,250,.06),var(--s1))}
+.plan-badge{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--grad);color:#fff;padding:.25rem .8rem;border-radius:100px;font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.plan-name{font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:800;letter-spacing:-.02em;margin-bottom:.3rem}
+.plan-tag{font-size:.82rem;color:var(--muted);margin-bottom:1.5rem;min-height:2.5em}
+.plan-price{font-family:'Syne',sans-serif;font-size:2.4rem;font-weight:800;letter-spacing:-.03em;line-height:1}
+.plan-price .currency{font-size:1.2rem;font-weight:600;vertical-align:top;color:var(--muted);margin-right:.1em}
+.plan-price .period{font-size:.95rem;font-weight:400;color:var(--muted);margin-left:.2em}
+.plan-credits{margin-top:.5rem;font-size:.95rem;font-weight:600;color:var(--v);font-family:'Syne',sans-serif;letter-spacing:-.01em}
+.plan-features{list-style:none;margin:1.5rem 0;flex:1}
+.plan-features li{font-size:.88rem;color:var(--muted);padding:.4rem 0;display:flex;align-items:flex-start;gap:.6rem;line-height:1.5}
+.plan-features li::before{content:'✓';color:var(--g);font-weight:700;flex-shrink:0;margin-top:.05em}
+.plan-cta{width:100%;padding:.85rem;border-radius:10px;font-family:inherit;font-weight:700;font-size:.92rem;cursor:pointer;transition:all .15s;border:none}
+.plan-cta-primary{background:var(--grad);color:#fff}
+.plan-cta-primary:hover{transform:translateY(-1px)}
+.plan-cta-ghost{background:transparent;color:var(--white);border:1px solid var(--border)}
+.plan-cta-ghost:hover{border-color:var(--v);color:var(--v)}
+
+/* Credit guide */
+.credit-guide{max-width:1180px;margin:5rem auto;padding:0 2rem}
+.section-h{font-family:'Syne',sans-serif;font-size:clamp(1.7rem,3vw,2.4rem);font-weight:800;letter-spacing:-.02em;text-align:center;margin-bottom:.5rem}
+.section-sub{text-align:center;color:var(--muted);font-size:.98rem;line-height:1.6;max-width:560px;margin:0 auto 2.5rem}
+.credit-table-wrap{background:var(--s1);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.credit-table{width:100%;border-collapse:collapse}
+.credit-table th{text-align:left;padding:1rem 1.2rem;font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;border-bottom:1px solid var(--border);background:var(--s2)}
+.credit-table td{padding:1.1rem 1.2rem;border-bottom:1px solid var(--border);font-size:.92rem}
+.credit-table tr:last-child td{border-bottom:none}
+.credit-table .icon{font-size:1.4rem;margin-right:.5rem;vertical-align:middle}
+.credit-table .price-tag{font-family:'Syne',sans-serif;font-weight:700;color:var(--v);font-size:1.05rem;letter-spacing:-.01em}
+.credit-table .desc{color:var(--muted);font-size:.85rem}
+
+/* FAQ */
+.faq{max-width:760px;margin:5rem auto;padding:0 2rem}
+.faq-item{background:var(--s1);border:1px solid var(--border);border-radius:12px;margin-bottom:.7rem;overflow:hidden}
+.faq-q{padding:1.1rem 1.4rem;font-weight:600;font-size:.95rem;cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none;transition:background .15s}
+.faq-q:hover{background:var(--s2)}
+.faq-q::after{content:'+';font-size:1.4rem;color:var(--muted);transition:transform .25s;font-weight:300}
+.faq-item.open .faq-q::after{transform:rotate(45deg)}
+.faq-a{padding:0 1.4rem;max-height:0;overflow:hidden;transition:max-height .3s ease,padding .3s ease;color:var(--muted);font-size:.9rem;line-height:1.6}
+.faq-item.open .faq-a{padding:0 1.4rem 1.2rem;max-height:500px}
+
+/* Footer */
+.footer{padding:3rem 2rem 2.5rem;border-top:1px solid var(--border);text-align:center;color:var(--muted);font-size:.78rem;max-width:1280px;margin:4rem auto 0}
+.footer-row{display:flex;justify-content:center;gap:1.5rem;margin-bottom:.7rem;flex-wrap:wrap}
+.footer-row a{cursor:pointer;transition:color .15s}
+.footer-row a:hover{color:var(--white)}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a class="logo" href="/">CharaMaker</a>
+  <div class="topbar-links">
+    <a class="topbar-link" href="/guide">Guide</a>
+    <a class="topbar-link active" href="/pricing">Pricing</a>
+    <a class="topbar-cta" href="/">Open Studio →</a>
+  </div>
+</div>
+
+<section class="hero">
+  <div class="hero-pill">PRICING</div>
+  <h1>Simple plans.<br><span class="gr">Powerful creation.</span></h1>
+  <p>Start free. Upgrade when you're ready to scale your AI character into a viral content machine.</p>
+</section>
+
+<!-- Plans -->
+<section class="plans">
+
+  <!-- FREE -->
+  <div class="plan">
+    <div class="plan-name">Free</div>
+    <div class="plan-tag">Try the full studio with starter credits.</div>
+    <div class="plan-price"><span class="currency">$</span>0<span class="period">/forever</span></div>
+    <div class="plan-credits">500 credits (one-time)</div>
+    <ul class="plan-features">
+      <li>1 character + 2 image generations</li>
+      <li>Magazine-quality AI images</li>
+      <li>Public gallery access</li>
+      <li>Earn 20 credits per gallery approval</li>
+    </ul>
+    <button class="plan-cta plan-cta-ghost" onclick="window.location.href='/'">Get started</button>
+  </div>
+
+  <!-- STARTER -->
+  <div class="plan">
+    <div class="plan-name">Starter</div>
+    <div class="plan-tag">For creators getting started with AI content.</div>
+    <div class="plan-price"><span class="currency">$</span>9.99<span class="period">/mo</span></div>
+    <div class="plan-credits">3,000 credits / month</div>
+    <ul class="plan-features">
+      <li>~30 characters or 6 short videos</li>
+      <li>All character + image features</li>
+      <li>5-15 second motion-transfer videos</li>
+      <li>Multi-aspect ratios (1:1, 9:16, 16:9)</li>
+      <li>SNS captions for 4 platforms</li>
+    </ul>
+    <button class="plan-cta plan-cta-ghost" onclick="alert('Subscriptions coming soon!')">Coming soon</button>
+  </div>
+
+  <!-- CREATOR (featured) -->
+  <div class="plan featured">
+    <div class="plan-badge">Most popular</div>
+    <div class="plan-name">Creator</div>
+    <div class="plan-tag">For active creators publishing weekly.</div>
+    <div class="plan-price"><span class="currency">$</span>24.99<span class="period">/mo</span></div>
+    <div class="plan-credits">9,000 credits / month</div>
+    <ul class="plan-features">
+      <li>~18 short videos or 45 images</li>
+      <li>Everything in Starter</li>
+      <li>Priority generation queue</li>
+      <li>Earn bonus credits via gallery</li>
+      <li>Full History + asset management</li>
+    </ul>
+    <button class="plan-cta plan-cta-primary" onclick="alert('Subscriptions coming soon!')">Coming soon</button>
+  </div>
+
+  <!-- PRO -->
+  <div class="plan">
+    <div class="plan-name">Pro</div>
+    <div class="plan-tag">For agencies and high-volume creators.</div>
+    <div class="plan-price"><span class="currency">$</span>99.99<span class="period">/mo</span></div>
+    <div class="plan-credits">50,000 credits / month</div>
+    <ul class="plan-features">
+      <li>~100 videos or 250 images</li>
+      <li>Everything in Creator</li>
+      <li>Priority email support</li>
+      <li>Bulk generation workflows</li>
+      <li>Custom watermarks (coming soon)</li>
+    </ul>
+    <button class="plan-cta plan-cta-ghost" onclick="alert('Subscriptions coming soon!')">Coming soon</button>
+  </div>
+
+</section>
+
+<!-- Credit guide -->
+<section class="credit-guide">
+  <h2 class="section-h">Credit costs at a glance</h2>
+  <p class="section-sub">All plans use the same credit system. Heavier outputs cost more credits — videos especially scale with duration.</p>
+  <div class="credit-table-wrap">
+    <table class="credit-table">
+      <thead>
+        <tr><th>Action</th><th>Credits</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="icon">🎭</span><b>Create a character</b></td>
+          <td><span class="price-tag">100</span></td>
+          <td class="desc">Includes persona writing, vision analysis, and a 1024×1024 profile image.</td>
+        </tr>
+        <tr>
+          <td><span class="icon">🖼️</span><b>Generate an image</b></td>
+          <td><span class="price-tag">200</span></td>
+          <td class="desc">Any scene with your character. Choose 1:1, 9:16, or 16:9.</td>
+        </tr>
+        <tr>
+          <td><span class="icon">🎬</span><b>Generate a 5-second video</b></td>
+          <td><span class="price-tag">500</span></td>
+          <td class="desc">Includes face-swap, motion transfer, and final render.</td>
+        </tr>
+        <tr>
+          <td><span class="icon">🎬</span><b>Generate a longer video</b></td>
+          <td><span class="price-tag">+150 / sec</span></td>
+          <td class="desc">e.g. 10s = 1,250 credits, 15s = 2,000 credits.</td>
+        </tr>
+        <tr>
+          <td><span class="icon">✨</span><b>Generate SNS captions</b></td>
+          <td><span class="price-tag">Free</span></td>
+          <td class="desc">Three styles per platform — Instagram, TikTok, X, YouTube.</td>
+        </tr>
+        <tr>
+          <td><span class="icon">🌟</span><b>Get gallery approval</b></td>
+          <td><span class="price-tag" style="color:var(--g)">+20 bonus</span></td>
+          <td class="desc">Submit your best work — earn credits when our team approves it.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="faq">
+  <h2 class="section-h">Frequently asked questions</h2>
+  <p class="section-sub">Got more questions? Reach us anytime.</p>
+
+  <div class="faq-item" onclick="this.classList.toggle('open')">
+    <div class="faq-q">How does the credit system work?</div>
+    <div class="faq-a">Every generation deducts credits based on its complexity. Characters cost 100, images 200, and videos 500+ depending on length. Failed or cancelled jobs don't deduct credits — you're only charged for successful results.</div>
+  </div>
+
+  <div class="faq-item" onclick="this.classList.toggle('open')">
+    <div class="faq-q">Do unused credits roll over?</div>
+    <div class="faq-a">Credits granted as a free signup bonus are one-time. Subscription credits reset each billing cycle and do not roll over. If you need more credits within a month, you can upgrade your plan or wait for the next cycle.</div>
+  </div>
+
+  <div class="faq-item" onclick="this.classList.toggle('open')">
+    <div class="faq-q">How do I earn bonus credits?</div>
+    <div class="faq-a">Submit your characters, images, or videos to the public gallery. Each approved submission earns you +20 credits — and helps inspire other creators.</div>
+  </div>
+
+  <div class="faq-item" onclick="this.classList.toggle('open')">
+    <div class="faq-q">Can I cancel my subscription anytime?</div>
+    <div class="faq-a">Yes. You can cancel anytime from your account settings. You'll keep access to your current plan's credits until the end of your billing period, after which you'll be moved to the Free plan.</div>
+  </div>
+
+  <div class="faq-item" onclick="this.classList.toggle('open')">
+    <div class="faq-q">Can I upgrade or downgrade plans?</div>
+    <div class="faq-a">Yes — switch plans anytime from your account. Upgrades take effect immediately with prorated credits. Downgrades take effect at the next billing cycle.</div>
+  </div>
+
+  <div class="faq-item" onclick="this.classList.toggle('open')">
+    <div class="faq-q">What's your refund policy?</div>
+    <div class="faq-a">We offer refunds within 7 days of purchase if you've used less than 10% of your monthly credits. Contact our support team for refund requests.</div>
+  </div>
+
+  <div class="faq-item" onclick="this.classList.toggle('open')">
+    <div class="faq-q">Is my data private?</div>
+    <div class="faq-a">Yes. By default, your characters, images, and videos are private and visible only to you. They appear in the public gallery only if you explicitly share them and our admin approves the submission.</div>
+  </div>
+
+  <div class="faq-item" onclick="this.classList.toggle('open')">
+    <div class="faq-q">Who owns the content I create?</div>
+    <div class="faq-a">You retain full rights to all content you create with CharaMaker. You're free to use it commercially — for social media, marketing, products, or anywhere else.</div>
+  </div>
+
+  <div class="faq-item" onclick="this.classList.toggle('open')">
+    <div class="faq-q">Can I use uploaded reference images?</div>
+    <div class="faq-a">Yes — upload your own reference images for character design or scene composition. Make sure you have rights to use those images. We don't store your uploads beyond what's needed for generation.</div>
+  </div>
+
+  <div class="faq-item" onclick="this.classList.toggle('open')">
+    <div class="faq-q">Do you support invoices for businesses?</div>
+    <div class="faq-a">Yes — billing receipts are automatically emailed for every transaction. For custom enterprise invoices or volume pricing, please contact our support team.</div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="footer-row">
+    <a href="/">Studio</a>
+    <a href="/guide">Guide</a>
+    <a href="/pricing">Pricing</a>
+  </div>
+  <div>© CharaMaker · Powered by Anthropic, xAI Grok, Atlas Cloud & fal.ai</div>
+</footer>
+
+</body>
+</html>
