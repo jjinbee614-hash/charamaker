@@ -866,7 +866,10 @@ async function initAuth() {
   const { data: { session } } = await supa.auth.getSession();
   S.user = session?.user || null;
   renderUserWidget();
-  if (S.user) loadCredits(); // load balance on app boot
+  if (S.user) {
+    loadCredits(); // load balance on app boot
+    resumePendingJobs(); // resume any in-flight image/video generation from previous session
+  }
 
   supa.auth.onAuthStateChange((event, sess) => {
     const wasSignedIn = !!S.user;
@@ -878,6 +881,7 @@ async function initAuth() {
       toast(`Welcome, ${S.user.user_metadata?.name || 'friend'}! ✓`);
       loadCharacters();
       loadCredits();
+      resumePendingJobs();
     } else if (wasSignedIn && !S.user) {
       // Signed out
       S.characters = [];
@@ -985,6 +989,93 @@ function closeCreditsModal() {
 function canSpend(amount) {
   if (S.credits === -1) return true; // admin
   return (S.credits ?? 0) >= amount;
+}
+
+// ═══════════════════════════════════════════════════════════
+// BACKGROUND JOB RECOVERY
+// ═══════════════════════════════════════════════════════════
+// On app boot or sign-in, check if the user has any pending image/video jobs
+// from a previous session (browser closed, page reloaded, etc.) and resume polling.
+async function resumePendingJobs() {
+  if (!S.user) return;
+  try {
+    // Find pending image jobs from this user (last 30 minutes — older ones likely dead)
+    const cutoff = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+
+    const { data: pendingImgs } = await supa
+      .from('images')
+      .select('id, atlas_request_id, character_id, prompt, created_at')
+      .eq('user_id', S.user.id)
+      .eq('status', 'pending')
+      .gt('created_at', cutoff)
+      .order('created_at', { ascending: false })
+      .limit(3);
+
+    const { data: pendingVids } = await supa
+      .from('videos')
+      .select('id, atlas_request_id, character_id, created_at')
+      .eq('user_id', S.user.id)
+      .eq('status', 'pending')
+      .gt('created_at', cutoff)
+      .order('created_at', { ascending: false })
+      .limit(3);
+
+    const totalPending = (pendingImgs?.length || 0) + (pendingVids?.length || 0);
+    if (!totalPending) return;
+
+    // Mark older-than-30min as failed (cleanup)
+    const ancient = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+    await supa.from('images').update({ status: 'failed' })
+      .eq('user_id', S.user.id).eq('status', 'pending').lt('created_at', ancient);
+    await supa.from('videos').update({ status: 'failed' })
+      .eq('user_id', S.user.id).eq('status', 'pending').lt('created_at', ancient);
+
+    // Show a heads-up toast
+    toast(`Resuming ${totalPending} in-progress job${totalPending > 1 ? 's' : ''}...`);
+
+    // Resume image polling in the background
+    for (const row of (pendingImgs || [])) {
+      if (!row.atlas_request_id) continue;
+      resumeImageJob(row).catch(e => console.warn('[resume img]', e.message));
+    }
+    for (const row of (pendingVids || [])) {
+      if (!row.atlas_request_id) continue;
+      resumeVideoJob(row).catch(e => console.warn('[resume vid]', e.message));
+    }
+  } catch (e) {
+    console.warn('[resumePendingJobs]', e.message);
+  }
+}
+
+async function resumeImageJob(row) {
+  try {
+    progShow('img', 'Resuming previous image job...');
+    const url = await pollAtlasJob(row.atlas_request_id, 'img');
+    await supa.from('images').update({ image_url: url, status: 'completed' }).eq('id', row.id);
+    // Spend credits now that we have a confirmed result (idempotent — only once)
+    try { await spendCredits(CREDIT_COSTS.image, 'spend_image', row.id); } catch (e) { console.warn('[credits]', e); }
+    toast('Image ready ✓ (from previous session) — check History');
+    loadCharacters();
+  } catch (e) {
+    progHide('img');
+    await supa.from('images').update({ status: 'failed' }).eq('id', row.id);
+    console.warn('[resumeImageJob]', e.message);
+  }
+}
+
+async function resumeVideoJob(row) {
+  try {
+    progShow('vid', 'Resuming previous video job...');
+    const url = await pollAtlasJob(row.atlas_request_id, 'vid');
+    await supa.from('videos').update({ video_url: url, status: 'completed' }).eq('id', row.id);
+    try { await spendCredits(CREDIT_COSTS.video_base, 'spend_video', row.id); } catch (e) { console.warn('[credits]', e); }
+    toast('Video ready ✓ (from previous session) — check History');
+    loadCharacters();
+  } catch (e) {
+    progHide('vid');
+    await supa.from('videos').update({ status: 'failed' }).eq('id', row.id);
+    console.warn('[resumeVideoJob]', e.message);
+  }
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1401,6 +1492,8 @@ async function generateImage() {
 
   progShow('img', 'Generating image (1-2 min)...');
 
+  let pendingRowId = null;  // declared outside try so catch can mark it failed
+
   try {
     // If user picked a non-1:1 ratio, extend the profile image client-side first.
     // This gives the model an input that already has the target aspect ratio.
@@ -1422,6 +1515,27 @@ async function generateImage() {
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || 'submit failed');
 
+    // ── Background-friendly flow ──
+    // Insert a 'pending' row right after submit so this job survives reload.
+    // The poll runs as before, but on completion we UPDATE this row instead of INSERT.
+    const atlasReqId = data.atlas_request_id || data.request_id || null;
+    if (atlasReqId) {
+      const { data: pending } = await supa.from('images').insert({
+        user_id: S.user.id,
+        character_id: profile.id,
+        image_url: '',  // not yet ready
+        prompt,
+        reference_image_url: S.imgRefImageUrl,
+        atlas_request_id: atlasReqId,
+        status: 'pending',
+      }).select().single();
+      pendingRowId = pending?.id || null;
+      S.lastImageRowId = pendingRowId;
+    }
+
+    // Helper: show a non-blocking note that the user can leave & come back
+    progShow('img', `Generating image — feel free to do other things, your result will appear in History.`);
+
     let url;
     if (data.sync && data.output) {
       url = data.output;
@@ -1432,14 +1546,26 @@ async function generateImage() {
       url = await pollJob(data.model, data.request_id, 'img', 'Rendering image...', data.status_url);
     }
 
-    // Save to Supabase and capture row id (for "Share with community")
-    const { data: imgRow } = await supa.from('images').insert({
-      user_id: S.user.id,
-      character_id: profile.id,
-      image_url: url,
-      prompt,
-      reference_image_url: S.imgRefImageUrl,
-    }).select().single();
+    // Either UPDATE the pending row (background flow) or INSERT (fallback for sync results)
+    let imgRow;
+    if (pendingRowId) {
+      const { data: updated } = await supa
+        .from('images')
+        .update({ image_url: url, status: 'completed' })
+        .eq('id', pendingRowId)
+        .select().single();
+      imgRow = updated;
+    } else {
+      const { data: inserted } = await supa.from('images').insert({
+        user_id: S.user.id,
+        character_id: profile.id,
+        image_url: url,
+        prompt,
+        reference_image_url: S.imgRefImageUrl,
+        status: 'completed',
+      }).select().single();
+      imgRow = inserted;
+    }
 
     S.lastImage = url;
     S.lastImageRowId = imgRow?.id || null;
@@ -1454,6 +1580,10 @@ async function generateImage() {
     toast('Image ready! ✓');
   } catch (e) {
     progHide('img'); toast(e.message || 'Failed', 'err');
+    // Mark pending row as failed so user is not charged + UI reflects state
+    if (pendingRowId) {
+      await supa.from('images').update({ status: 'failed' }).eq('id', pendingRowId);
+    }
   }
   btn.disabled = false; btn.textContent = '✦ Generate Image';
 }
@@ -1480,6 +1610,8 @@ async function generateVideo() {
   btn.disabled = true; btn.textContent = 'Processing...';
   progShow('vid', 'Step 1: Extracting frame from video...');
 
+  let pendingRowId = null;  // declared outside try so catch can mark it failed
+
   try {
     const res = await fetch(`${API}/api/video`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -1490,6 +1622,24 @@ async function generateVideo() {
     });
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || 'submit failed');
+
+    // ── Background-friendly flow ──
+    const atlasReqId = data.atlas_request_id || data.request_id || null;
+    if (atlasReqId) {
+      const { data: pending } = await supa.from('videos').insert({
+        user_id: S.user.id,
+        character_id: profile.id,
+        video_url: '',
+        reference_video_url: S.vidRefVideoUrl,
+        swapped_image_url: data.swapped_image_url || null,
+        atlas_request_id: atlasReqId,
+        status: 'pending',
+      }).select().single();
+      pendingRowId = pending?.id || null;
+      S.lastVideoRowId = pendingRowId;
+    }
+
+    progShow('vid', `Generating video — feel free to do other things, your result will appear in History.`);
 
     let url;
     if (data.sync && data.output) {
@@ -1502,14 +1652,26 @@ async function generateVideo() {
       url = await pollJob(data.model, data.request_id, 'vid', 'Rendering final video...', data.status_url);
     }
 
-    // Save and capture row id
-    const { data: vidRow } = await supa.from('videos').insert({
-      user_id: S.user.id,
-      character_id: profile.id,
-      video_url: url,
-      reference_video_url: S.vidRefVideoUrl,
-      swapped_image_url: data.swapped_image_url,
-    }).select().single();
+    // Either UPDATE the pending row or INSERT (sync fallback)
+    let vidRow;
+    if (pendingRowId) {
+      const { data: updated } = await supa
+        .from('videos')
+        .update({ video_url: url, status: 'completed' })
+        .eq('id', pendingRowId)
+        .select().single();
+      vidRow = updated;
+    } else {
+      const { data: inserted } = await supa.from('videos').insert({
+        user_id: S.user.id,
+        character_id: profile.id,
+        video_url: url,
+        reference_video_url: S.vidRefVideoUrl,
+        swapped_image_url: data.swapped_image_url,
+        status: 'completed',
+      }).select().single();
+      vidRow = inserted;
+    }
 
     S.lastVideo = url;
     S.lastVideoRowId = vidRow?.id || null;
@@ -1527,6 +1689,9 @@ async function generateVideo() {
     toast('Video ready! ✓');
   } catch (e) {
     progHide('vid'); toast(e.message || 'Failed', 'err');
+    if (pendingRowId) {
+      await supa.from('videos').update({ status: 'failed' }).eq('id', pendingRowId);
+    }
   }
   btn.disabled = false; btn.textContent = '✦ Generate Video';
 }
@@ -1920,16 +2085,42 @@ async function loadHistory() {
             <div class="char-group-section-title">🖼️ Images (${imgs.length})</div>
             ${imgs.length === 0 ? '<div class="char-group-empty">No images yet</div>' : `
               <div class="history-grid">
-                ${imgs.map(i => `
-                  <div class="history-card" onclick="openModal('<img src=\\'${i.image_url}\\'>')">
-                    <button class="history-del" onclick="event.stopPropagation();deleteAsset('image','${i.id}')" title="Delete">✕</button>
-                    <div class="history-thumb"><img src="${i.image_url}"></div>
-                    <div class="history-info">
-                      <div class="history-name">${(i.prompt || '').slice(0, 40) || 'Image'}</div>
-                      <div class="history-time">${new Date(i.created_at).toLocaleDateString()}</div>
-                    </div>
-                  </div>
-                `).join('')}
+                ${imgs.map(i => {
+                  if (i.status === 'pending') {
+                    return `
+                      <div class="history-card" style="opacity:.85;cursor:default">
+                        <div class="history-thumb" style="display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--s2),var(--s3))">
+                          <div style="font-size:2rem;animation:spin 2s linear infinite">⏳</div>
+                        </div>
+                        <div class="history-info">
+                          <div class="history-name" style="color:var(--v)">Generating...</div>
+                          <div class="history-time">${new Date(i.created_at).toLocaleString()}</div>
+                        </div>
+                      </div>`;
+                  }
+                  if (i.status === 'failed') {
+                    return `
+                      <div class="history-card" style="opacity:.5">
+                        <button class="history-del" onclick="event.stopPropagation();deleteAsset('image','${i.id}')" title="Delete">✕</button>
+                        <div class="history-thumb" style="display:flex;align-items:center;justify-content:center;background:var(--s3)">
+                          <div style="font-size:2rem;color:var(--r)">⚠️</div>
+                        </div>
+                        <div class="history-info">
+                          <div class="history-name" style="color:var(--r)">Generation failed</div>
+                          <div class="history-time">${new Date(i.created_at).toLocaleDateString()}</div>
+                        </div>
+                      </div>`;
+                  }
+                  return `
+                    <div class="history-card" onclick="openModal('<img src=\\'${i.image_url}\\'>')">
+                      <button class="history-del" onclick="event.stopPropagation();deleteAsset('image','${i.id}')" title="Delete">✕</button>
+                      <div class="history-thumb"><img src="${i.image_url}"></div>
+                      <div class="history-info">
+                        <div class="history-name">${(i.prompt || '').slice(0, 40) || 'Image'}</div>
+                        <div class="history-time">${new Date(i.created_at).toLocaleDateString()}</div>
+                      </div>
+                    </div>`;
+                }).join('')}
               </div>
             `}
           </div>
@@ -1937,16 +2128,42 @@ async function loadHistory() {
             <div class="char-group-section-title">🎬 Videos (${vids.length})</div>
             ${vids.length === 0 ? '<div class="char-group-empty">No videos yet</div>' : `
               <div class="history-grid">
-                ${vids.map(v => `
-                  <div class="history-card" onclick="openModal('<video src=\\'${v.video_url}\\' controls loop autoplay>')">
-                    <button class="history-del" onclick="event.stopPropagation();deleteAsset('video','${v.id}')" title="Delete">✕</button>
-                    <div class="history-thumb"><video src="${v.video_url}" muted></video></div>
-                    <div class="history-info">
-                      <div class="history-name">Video</div>
-                      <div class="history-time">${new Date(v.created_at).toLocaleDateString()}</div>
-                    </div>
-                  </div>
-                `).join('')}
+                ${vids.map(v => {
+                  if (v.status === 'pending') {
+                    return `
+                      <div class="history-card" style="opacity:.85;cursor:default">
+                        <div class="history-thumb" style="display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--s2),var(--s3))">
+                          <div style="font-size:2rem;animation:spin 2s linear infinite">⏳</div>
+                        </div>
+                        <div class="history-info">
+                          <div class="history-name" style="color:var(--v)">Generating...</div>
+                          <div class="history-time">${new Date(v.created_at).toLocaleString()}</div>
+                        </div>
+                      </div>`;
+                  }
+                  if (v.status === 'failed') {
+                    return `
+                      <div class="history-card" style="opacity:.5">
+                        <button class="history-del" onclick="event.stopPropagation();deleteAsset('video','${v.id}')" title="Delete">✕</button>
+                        <div class="history-thumb" style="display:flex;align-items:center;justify-content:center;background:var(--s3)">
+                          <div style="font-size:2rem;color:var(--r)">⚠️</div>
+                        </div>
+                        <div class="history-info">
+                          <div class="history-name" style="color:var(--r)">Generation failed</div>
+                          <div class="history-time">${new Date(v.created_at).toLocaleDateString()}</div>
+                        </div>
+                      </div>`;
+                  }
+                  return `
+                    <div class="history-card" onclick="openModal('<video src=\\'${v.video_url}\\' controls loop autoplay>')">
+                      <button class="history-del" onclick="event.stopPropagation();deleteAsset('video','${v.id}')" title="Delete">✕</button>
+                      <div class="history-thumb"><video src="${v.video_url}" muted></video></div>
+                      <div class="history-info">
+                        <div class="history-name">Video</div>
+                        <div class="history-time">${new Date(v.created_at).toLocaleDateString()}</div>
+                      </div>
+                    </div>`;
+                }).join('')}
               </div>
             `}
           </div>
