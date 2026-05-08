@@ -626,7 +626,7 @@ input:focus,textarea:focus,select:focus{border-color:rgba(167,139,250,.5)}
             </div>
           </div>
 
-          <button class="btn btn-grad btn-full" id="cc-btn" onclick="createCharacter()">✦ Design My Character</button>
+          <button class="btn btn-grad btn-full" id="cc-btn" onclick="createCharacter()">✦ Design My Character · 100 credits</button>
         </div>
 
         <!-- Output -->
@@ -712,7 +712,7 @@ input:focus,textarea:focus,select:focus{border-color:rgba(167,139,250,.5)}
               </button>
             </div>
           </div>
-          <button class="btn btn-grad btn-full" id="img-btn" onclick="generateImage()">✦ Generate Image</button>
+          <button class="btn btn-grad btn-full" id="img-btn" onclick="generateImage()">✦ Generate Image · 200 credits</button>
         </div>
 
         <!-- Output -->
@@ -762,7 +762,7 @@ input:focus,textarea:focus,select:focus{border-color:rgba(167,139,250,.5)}
             </div>
           </div>
 
-          <button class="btn btn-grad btn-full" id="vid-btn" onclick="generateVideo()" style="margin-top:1rem">✦ Generate Video</button>
+          <button class="btn btn-grad btn-full" id="vid-btn" onclick="generateVideo()" style="margin-top:1rem">✦ Generate Video · 500 credits</button>
         </div>
 
         <!-- Output -->
@@ -963,6 +963,21 @@ function videoCreditCost(seconds) {
   const s = Math.max(1, Math.ceil(seconds || 5));
   if (s <= 5) return CREDIT_COSTS.video_base;
   return CREDIT_COSTS.video_base + (s - 5) * CREDIT_COSTS.video_per_extra_sec;
+}
+
+// Update the Generate Video button label to reflect the actual cost
+// based on the uploaded reference video's duration.
+function updateVideoButtonText() {
+  const btn = document.getElementById('vid-btn');
+  if (!btn) return;
+  const dur = S.vidRefVideoDuration;
+  if (!dur) {
+    btn.textContent = `✦ Generate Video · 500 credits`;
+    return;
+  }
+  const cost = videoCreditCost(dur);
+  const sec = Math.ceil(dur);
+  btn.textContent = `✦ Generate Video · ${cost.toLocaleString()} credits (${sec}s)`;
 }
 
 // Cache the user's current credit balance and plan
@@ -1468,6 +1483,7 @@ async function handleRefVideo(event) {
 
     S.vidRefVideoUrl = data.url;
     S.vidRefVideoDuration = duration || 0;
+    updateVideoButtonText();
     document.getElementById('vid-ref-zone').classList.add('has-file');
     document.getElementById('vid-ref-display').innerHTML = `
       <div style="display:flex;gap:.7rem;align-items:center;text-align:left">
