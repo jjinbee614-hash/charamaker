@@ -1953,7 +1953,14 @@ async function loadCharacters() {
   // Skip the network call to keep things snappy and avoid noisy errors.
   if (!S.user) { S.characters = []; return; }
   try {
-    const { data, error } = await supa.from('characters').select('*').order('created_at', { ascending: false });
+    // Explicit user_id filter — without this, admins would see other users' characters
+    // due to the "admins can select all" RLS policy. The studio shows only the current
+    // user's profiles, so we filter at the query level.
+    const { data, error } = await supa
+      .from('characters')
+      .select('*')
+      .eq('user_id', S.user.id)
+      .order('created_at', { ascending: false });
     if (error) throw error;
     S.characters = data || [];
   } catch (e) { console.error('loadCharacters:', e); }
@@ -2176,14 +2183,15 @@ async function loadHistory() {
     return;
   }
 
-  // Fetch all images & videos so we can group them by character
+  // Fetch all images & videos so we can group them by character.
+  // Explicit user_id filter to prevent admins from seeing other users' content.
   let allImages = [], allVideos = [];
   try {
-    const r1 = await supa.from('images').select('*').order('created_at', { ascending: false });
+    const r1 = await supa.from('images').select('*').eq('user_id', S.user.id).order('created_at', { ascending: false });
     allImages = r1.data || [];
   } catch (e) { console.error('[hist] images', e); }
   try {
-    const r2 = await supa.from('videos').select('*').order('created_at', { ascending: false });
+    const r2 = await supa.from('videos').select('*').eq('user_id', S.user.id).order('created_at', { ascending: false });
     allVideos = r2.data || [];
   } catch (e) { console.error('[hist] videos', e); }
 
