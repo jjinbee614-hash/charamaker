@@ -154,7 +154,7 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;ov
 .main{padding:2rem 2.5rem;min-height:100vh;overflow-y:auto}
 .page{display:none}
 .page.active{display:block}
-.page-h1{font-family:'Syne',sans-serif;font-size:2rem;font-weight:800;letter-spacing:-.02em;margin-bottom:.4rem}
+.page-h1{font-family:'Syne',sans-serif;font-size:clamp(1.5rem,4vw,2rem);font-weight:800;letter-spacing:-.02em;margin-bottom:.4rem}
 .page-sub{font-size:.9rem;color:var(--muted);margin-bottom:2rem;line-height:1.6;max-width:600px}
 
 /* Layout helpers */
@@ -241,6 +241,7 @@ input:focus,textarea:focus,select:focus{border-color:rgba(167,139,250,.5)}
 
 /* Toast */
 .toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:.85rem 1.3rem;font-size:.84rem;transform:translateY(80px);opacity:0;transition:all .3s;z-index:9999;max-width:300px}
+@media(max-width:480px){.toast{left:1rem;right:1rem;bottom:1rem;max-width:none}}
 .toast.show{transform:translateY(0);opacity:1}
 .toast.ok{border-color:rgba(74,222,128,.3);color:var(--g)}
 .toast.err{border-color:rgba(248,113,113,.3);color:var(--r)}
@@ -635,12 +636,16 @@ input:focus,textarea:focus,select:focus{border-color:rgba(167,139,250,.5)}
           <div id="cc-result">
             <div id="cc-info" style="display:none;margin-bottom:1rem"></div>
             <div class="img-preview" id="cc-img-preview" style="margin-bottom:1rem">
-              Your character will appear here
+              <div style="text-align:center;color:var(--muted);padding:2rem 1rem">
+                <div style="font-size:2.5rem;margin-bottom:.6rem">🎭</div>
+                <div style="font-weight:700;color:var(--white);margin-bottom:.3rem;font-size:.95rem">Your character will appear here</div>
+                <div style="font-size:.82rem">Fill in some details (or leave blank) and tap Design.</div>
+              </div>
             </div>
             <div id="cc-traits" style="display:none;margin-bottom:1rem"></div>
-            <div id="cc-actions" style="display:none;margin-top:1rem;gap:.6rem;flex-wrap:wrap">
-              <button class="btn btn-ghost" onclick="goToImageTab()">→ Generate Image</button>
-              <button class="btn btn-ghost" onclick="goToVideoTab()">→ Generate Video</button>
+            <div id="cc-actions" style="display:none;margin-top:1.2rem;gap:.6rem;flex-wrap:wrap">
+              <button class="btn btn-grad" onclick="goToImageTab()">→ Generate Image</button>
+              <button class="btn btn-grad" onclick="goToVideoTab()" style="background:linear-gradient(135deg,#f472b6 0%,#a78bfa 100%)">→ Generate Video</button>
               <button class="btn btn-ghost" id="cc-share-btn" onclick="shareCharacter()" style="display:none">🌟 Share to gallery</button>
             </div>
           </div>
@@ -714,7 +719,13 @@ input:focus,textarea:focus,select:focus{border-color:rgba(167,139,250,.5)}
         <div class="card">
           <div class="card-title">🖼️ Generated Image</div>
           <div class="prog" id="img-prog"><span class="spin"></span><span id="img-prog-msg">Working...</span></div>
-          <div class="img-preview" id="img-result">Generated image will appear here</div>
+          <div class="img-preview" id="img-result">
+            <div style="text-align:center;color:var(--muted);padding:2rem 1rem">
+              <div style="font-size:2.5rem;margin-bottom:.6rem">🖼️</div>
+              <div style="font-weight:700;color:var(--white);margin-bottom:.3rem;font-size:.95rem">Your image will appear here</div>
+              <div style="font-size:.82rem">Pick a profile, write a scene, and tap Generate.</div>
+            </div>
+          </div>
           <button class="btn btn-ghost btn-full" id="img-dl-btn" onclick="downloadImage()" style="margin-top:1rem;display:none">⬇ Download</button>
           <button class="btn btn-grad btn-full" id="img-caption-btn" onclick="generateCaption('image')" style="margin-top:.6rem;display:none">✨ Create SNS Caption</button>
           <button class="btn btn-ghost btn-full" id="img-share-btn" onclick="shareToGallery('image')" style="margin-top:.6rem;display:none"></button>
@@ -758,7 +769,13 @@ input:focus,textarea:focus,select:focus{border-color:rgba(167,139,250,.5)}
         <div class="card">
           <div class="card-title">🎬 Generated Video</div>
           <div class="prog" id="vid-prog"><span class="spin"></span><span id="vid-prog-msg">Working...</span></div>
-          <div class="vid-preview" id="vid-result">Generated video will appear here</div>
+          <div class="vid-preview" id="vid-result">
+            <div style="text-align:center;color:var(--muted);padding:2rem 1rem">
+              <div style="font-size:2.5rem;margin-bottom:.6rem">🎬</div>
+              <div style="font-weight:700;color:var(--white);margin-bottom:.3rem;font-size:.95rem">Your video will appear here</div>
+              <div style="font-size:.82rem">Pick a profile + reference video, then tap Generate.</div>
+            </div>
+          </div>
           <button class="btn btn-ghost btn-full" id="vid-dl-btn" onclick="downloadVideo()" style="margin-top:1rem;display:none">⬇ Download</button>
           <button class="btn btn-grad btn-full" id="vid-caption-btn" onclick="generateCaption('video')" style="margin-top:.6rem;display:none">✨ Create SNS Caption</button>
           <button class="btn btn-ghost btn-full" id="vid-share-btn" onclick="shareToGallery('video')" style="margin-top:.6rem;display:none"></button>
@@ -1964,7 +1981,22 @@ function renderProfileGrid(prefix) {
     </div>
   `).join('');
 
-  grid.innerHTML = uploadTile + cardsHtml;
+  // Empty-state hint when the user has no characters yet
+  let emptyHint = '';
+  if (S.characters.length === 0) {
+    emptyHint = `
+      <div style="grid-column:1/-1;background:linear-gradient(135deg,rgba(167,139,250,.06),rgba(244,114,182,.06));border:1px dashed rgba(167,139,250,.3);border-radius:12px;padding:1.4rem 1.2rem;display:flex;align-items:center;gap:1rem">
+        <div style="font-size:1.8rem">✨</div>
+        <div style="flex:1">
+          <div style="font-weight:700;color:var(--white);margin-bottom:.25rem">No characters yet</div>
+          <div style="font-size:.85rem;color:var(--muted);line-height:1.5">Create your first AI character — or upload a reference image to get started.</div>
+        </div>
+        <button class="btn btn-grad" style="white-space:nowrap" onclick="setTab('character')">Design Character</button>
+      </div>
+    `;
+  }
+
+  grid.innerHTML = emptyHint + uploadTile + cardsHtml;
 }
 
 function selectRatio(btnEl) {
@@ -2134,7 +2166,13 @@ async function loadHistory() {
   const groupedEl = document.getElementById('hist-grouped');
 
   if (!S.characters.length) {
-    groupedEl.innerHTML = '<div class="history-empty" style="padding:2rem;text-align:center">No characters yet. Create one in the Character tab.</div>';
+    groupedEl.innerHTML = `
+      <div class="history-empty" style="padding:3rem 1rem;text-align:center;background:linear-gradient(135deg,rgba(167,139,250,.04),rgba(244,114,182,.04));border:1px dashed rgba(167,139,250,.2);border-radius:14px">
+        <div style="font-size:3rem;margin-bottom:.6rem">📭</div>
+        <div style="font-weight:700;color:var(--white);margin-bottom:.4rem;font-size:1.05rem">Your history is empty</div>
+        <div style="font-size:.88rem;color:var(--muted);margin-bottom:1.4rem;line-height:1.6">Once you create characters, generate images, or render videos — they'll show up here, organized by character.</div>
+        <button class="btn btn-grad" onclick="setTab('character')">Design your first character</button>
+      </div>`;
     return;
   }
 
