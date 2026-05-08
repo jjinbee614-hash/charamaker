@@ -2448,7 +2448,8 @@ async function loadHistory() {
                 ${imgs.map(i => {
                   if (i.status === 'pending') {
                     return `
-                      <div class="history-card" style="opacity:.85;cursor:default">
+                      <div class="history-card" style="opacity:.85;cursor:default;position:relative">
+                        <button class="history-del" onclick="event.stopPropagation();cancelPendingJob('image','${i.id}')" title="Cancel">✕</button>
                         <div class="history-thumb" style="display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--s2),var(--s3))">
                           <div style="font-size:2rem;animation:spin 2s linear infinite">⏳</div>
                         </div>
@@ -2491,7 +2492,8 @@ async function loadHistory() {
                 ${vids.map(v => {
                   if (v.status === 'pending') {
                     return `
-                      <div class="history-card" style="opacity:.85;cursor:default">
+                      <div class="history-card" style="opacity:.85;cursor:default;position:relative">
+                        <button class="history-del" onclick="event.stopPropagation();cancelPendingJob('video','${v.id}')" title="Cancel">✕</button>
                         <div class="history-thumb" style="display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--s2),var(--s3))">
                           <div style="font-size:2rem;animation:spin 2s linear infinite">⏳</div>
                         </div>
@@ -2657,6 +2659,28 @@ async function deleteAsset(type, id) {
   } catch (e) {
     console.error('[deleteAsset]', e);
     toastError(e, 'Delete failed');
+  }
+}
+
+// Cancel a pending generation job from History.
+// Marks the row as failed (stops the local poller from charging credits)
+// and stops the active in-page poller if this is the job currently running.
+async function cancelPendingJob(type, id) {
+  if (!confirm(`Cancel this pending ${type}? The generation will stop and you won't be charged.`)) return;
+  try {
+    const table = type === 'image' ? 'images' : 'videos';
+    // Mark as failed so resumePendingJobs won't pick it up + UI updates
+    const { error } = await supa.from(table).update({ status: 'failed' }).eq('id', id);
+    if (error) throw error;
+    // If this is the currently-running job, stop the active poller
+    if (typeof window.cancelCurrentJob === 'function') {
+      try { window.cancelCurrentJob(); } catch {}
+    }
+    toast('Cancelled ✓');
+    await loadHistory();
+  } catch (e) {
+    console.error('[cancelPendingJob]', e);
+    toastError(e, 'Cancel failed');
   }
 }
 
