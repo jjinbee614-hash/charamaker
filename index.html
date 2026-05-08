@@ -2351,6 +2351,7 @@ async function loadGallery(targetId, filterType) {
         <div class="gallery-item" onclick="${onClickModal}">
           <video src="${it.url}"${poster} muted loop playsinline preload="metadata"
                  onloadeddata="this.classList.add('loaded')"
+                 onerror="handleBrokenGalleryItem(this,'${it.id}')"
                  onmouseenter="this.play().catch(()=>{})"
                  onmouseleave="this.pause();this.currentTime=0"></video>
           <div class="gallery-badge">${badge}</div>
@@ -2363,7 +2364,7 @@ async function loadGallery(targetId, filterType) {
       const displayUrl = it.thumbnail_url || it.url;
       return `
         <div class="gallery-item" onclick="${onClickModal}">
-          <img src="${displayUrl}" alt="" loading="lazy" onload="this.classList.add('loaded')">
+          <img src="${displayUrl}" alt="" loading="lazy" onload="this.classList.add('loaded')" onerror="handleBrokenGalleryItem(this,'${it.id}')">
         </div>
       `;
     }
@@ -2371,12 +2372,26 @@ async function loadGallery(targetId, filterType) {
     const displayUrl = it.thumbnail_url || it.url;
     return `
       <div class="gallery-item" onclick="${onClickModal}">
-        <img src="${displayUrl}" alt="" loading="lazy" onload="this.classList.add('loaded')">
+        <img src="${displayUrl}" alt="" loading="lazy" onload="this.classList.add('loaded')" onerror="handleBrokenGalleryItem(this,'${it.id}')">
         <div class="gallery-badge">${badge}</div>
         ${caption}
       </div>
     `;
   }).join('');
+}
+
+// When a gallery image/video fails to load (404, hotlink blocked, etc.),
+// hide the card immediately AND tell the server to deactivate it so future visitors
+// don't see the broken slot. Best effort — admin can permanently fix later.
+async function handleBrokenGalleryItem(el, showcaseId) {
+  try {
+    el.parentElement.style.display = 'none';
+    console.warn('[gallery] hiding broken card:', showcaseId);
+    // Only admins/owners can update; for everyone else, this fails silently and just hides locally.
+    await supa.from('showcase').update({ is_active: false }).eq('id', showcaseId);
+  } catch (e) {
+    // RLS will block non-admins — that's fine, card is already hidden visually
+  }
 }
 
 function escapeHtml(s) {
