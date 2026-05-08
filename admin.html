@@ -463,7 +463,32 @@ async function moderate(type, id, newStatus) {
 
     if (newStatus === 'approved') {
       const { data: row } = await supa.from(table).select('*').eq('id', id).single();
-      const url = type === 'video' ? row.video_url : row.image_url;
+      let url = type === 'video' ? row.video_url : row.image_url;
+
+      // Auto-rehost external URLs to our permanent host (fal.media).
+      // External hosts like oss.filenest.top expire and break gallery cards over time.
+      if (url && !/(?:fal\.media|fal\.ai)/i.test(url)) {
+        try {
+          toast('Rehosting image to permanent storage...', 'ok');
+          const r = await fetch(`${API}/api/rehost-image`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url })
+          });
+          const d = await r.json();
+          if (d.ok && d.url) {
+            url = d.url;
+            // Also update the source row so future loads use the safe URL
+            const updateField = type === 'video' ? { video_url: url } : { image_url: url };
+            await supa.from(table).update(updateField).eq('id', id);
+            console.log('[moderate] rehosted to:', url);
+          } else {
+            console.warn('[moderate] rehost failed, original URL kept:', d);
+          }
+        } catch (e) {
+          console.warn('[moderate] rehost error:', e.message);
+        }
+      }
 
       let thumbnailUrl = null;
       if (type === 'image' || type === 'character') {
