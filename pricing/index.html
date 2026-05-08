@@ -91,6 +91,12 @@ a{color:inherit;text-decoration:none}
 .footer-row a{cursor:pointer;transition:color .15s}
 .footer-row a:hover{color:var(--white)}
 </style>
+<!-- Lemon Squeezy overlay checkout — opens checkout in a modal over our site -->
+<script src="https://app.lemonsqueezy.com/js/lemon.js" defer></script>
+
+<!-- Supabase — used to grab the signed-in user's email and auto-fill the checkout -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
 </head>
 <body>
 
@@ -138,7 +144,7 @@ a{color:inherit;text-decoration:none}
       <li>Multi-aspect ratios (1:1, 9:16, 16:9)</li>
       <li>SNS captions for 4 platforms</li>
     </ul>
-    <button class="plan-cta plan-cta-ghost" onclick="alert('Subscriptions coming soon!')">Coming soon</button>
+    <button class="plan-cta plan-cta-ghost" onclick="startCheckout('starter')">Subscribe</button>
   </div>
 
   <!-- CREATOR (featured) -->
@@ -155,7 +161,7 @@ a{color:inherit;text-decoration:none}
       <li>+100 credit bonus per approved video</li>
       <li>Full History + asset management</li>
     </ul>
-    <button class="plan-cta plan-cta-primary" onclick="alert('Subscriptions coming soon!')">Coming soon</button>
+    <button class="plan-cta plan-cta-primary" onclick="startCheckout('creator')">Subscribe</button>
   </div>
 
   <!-- PRO -->
@@ -171,7 +177,7 @@ a{color:inherit;text-decoration:none}
       <li>Bulk generation workflows</li>
       <li>Custom watermarks (coming soon)</li>
     </ul>
-    <button class="plan-cta plan-cta-ghost" onclick="alert('Subscriptions coming soon!')">Coming soon</button>
+    <button class="plan-cta plan-cta-ghost" onclick="startCheckout('pro')">Subscribe</button>
   </div>
 
 </section>
@@ -191,7 +197,7 @@ a{color:inherit;text-decoration:none}
         <li>Never expires</li>
         <li>~10 images or 2 short videos</li>
       </ul>
-      <button class="plan-cta plan-cta-ghost" onclick="alert('Credit packs coming soon!')">Coming soon</button>
+      <button class="plan-cta plan-cta-ghost" onclick="startCheckout('mini')">Buy now</button>
     </div>
 
     <div class="plan">
@@ -203,7 +209,7 @@ a{color:inherit;text-decoration:none}
         <li>Never expires</li>
         <li>~22 images or 4 short videos</li>
       </ul>
-      <button class="plan-cta plan-cta-ghost" onclick="alert('Credit packs coming soon!')">Coming soon</button>
+      <button class="plan-cta plan-cta-ghost" onclick="startCheckout('small')">Buy now</button>
     </div>
 
     <div class="plan featured">
@@ -216,7 +222,7 @@ a{color:inherit;text-decoration:none}
         <li>Never expires</li>
         <li>~50 images or 10 short videos</li>
       </ul>
-      <button class="plan-cta plan-cta-primary" onclick="alert('Credit packs coming soon!')">Coming soon</button>
+      <button class="plan-cta plan-cta-primary" onclick="startCheckout('medium')">Buy now</button>
     </div>
 
     <div class="plan">
@@ -228,7 +234,7 @@ a{color:inherit;text-decoration:none}
         <li>Never expires</li>
         <li>~140 images or 28 short videos</li>
       </ul>
-      <button class="plan-cta plan-cta-ghost" onclick="alert('Credit packs coming soon!')">Coming soon</button>
+      <button class="plan-cta plan-cta-ghost" onclick="startCheckout('large')">Buy now</button>
     </div>
 
   </div>
@@ -360,6 +366,91 @@ a{color:inherit;text-decoration:none}
   </div>
   <div>© 2026 CharaMaker. All rights reserved.</div>
 </footer>
+
+<script>
+  // ═══════════════════════════════════════════════════════════
+  // Lemon Squeezy checkout
+  // ═══════════════════════════════════════════════════════════
+  // Each plan/pack maps to a Lemon Squeezy checkout URL.
+  // We append:
+  //   - checkout[email]      → user's email (auto-fill, locks the field)
+  //   - checkout[custom][user_id] → Supabase user ID (so the webhook can credit
+  //     the right account when we wire it up later)
+  // dark=1 makes the overlay match our dark theme.
+
+  const CHECKOUT_URLS = {
+    starter:     'https://charamaker.lemonsqueezy.com/checkout/buy/7705cae5-29aa-482b-94a0-defcb189111d',
+    creator:     'https://charamaker.lemonsqueezy.com/checkout/buy/3a6a2d7a-63fc-44fa-ba1b-cd311c915fc9',
+    pro:         'https://charamaker.lemonsqueezy.com/checkout/buy/d151f923-5242-4097-b440-16d6528737a6',
+    mini:        'https://charamaker.lemonsqueezy.com/checkout/buy/27cb8b67-a623-4612-a628-a63cc4f4c7da',
+    small:       'https://charamaker.lemonsqueezy.com/checkout/buy/af94023e-0bfc-4bf3-afc4-a7512d836f3a',
+    medium:      'https://charamaker.lemonsqueezy.com/checkout/buy/792b0d34-3ac3-4b06-b005-39e89ce2bc62',
+    large:       'https://charamaker.lemonsqueezy.com/checkout/buy/b75e30ff-4fc6-4ee4-8f1e-9813d7e2c45a',
+  };
+
+  const supa = window.supabase.createClient(window.CONFIG.SUPABASE_URL, window.CONFIG.SUPABASE_KEY);
+
+  async function startCheckout(planKey) {
+    const baseUrl = CHECKOUT_URLS[planKey];
+    if (!baseUrl) {
+      alert('Plan not found.');
+      return;
+    }
+
+    // Try to grab the signed-in user's email + UUID so the webhook can match later
+    const { data: { session } } = await supa.auth.getSession();
+    const user = session?.user;
+
+    // Encourage sign-in first — without a user_id we can't credit the right account
+    // when the webhook is wired up. Direct them to the studio to sign in, then come back.
+    if (!user) {
+      const proceed = confirm(
+        'Sign in first so we can credit the right account.\n\n' +
+        'Click OK to sign in (we\'ll bring you back to /pricing), or Cancel to continue as a guest.'
+      );
+      if (proceed) {
+        // Open the studio with a flag so it can offer sign-in then return
+        window.location.href = '/?signin=1&return=/pricing';
+        return;
+      }
+      // else: fall through to checkout without user_id (guest purchase)
+    }
+
+    const params = new URLSearchParams();
+    // Match our dark UI in the overlay
+    params.set('dark', '1');
+    // Embed mode skips the success redirect (overlay handles it)
+    params.set('embed', '1');
+    // Send user back to /pricing after closing checkout
+    params.set('checkout[success_url]', window.location.origin + '/pricing');
+
+    if (user) {
+      params.set('checkout[email]', user.email);
+      params.set('checkout[custom][user_id]', user.id);
+      // Pre-fill name if available
+      const name = user.user_metadata?.full_name || user.user_metadata?.name;
+      if (name) params.set('checkout[name]', name);
+    }
+
+    const finalUrl = baseUrl + '?' + params.toString();
+
+    // If LemonSqueezy.js is loaded, use the overlay; otherwise fallback to redirect
+    if (window.LemonSqueezy && typeof window.LemonSqueezy.Url === 'object') {
+      // Lemon overlay opens via a link click with class "lemonsqueezy-button"
+      // — easiest is just to navigate the iframe-style URL via the bundled API
+      const a = document.createElement('a');
+      a.href = finalUrl;
+      a.className = 'lemonsqueezy-button';
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } else {
+      // Fallback: full-page redirect
+      window.location.href = finalUrl;
+    }
+  }
+</script>
 
 </body>
 </html>
