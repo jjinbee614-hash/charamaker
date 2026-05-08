@@ -505,7 +505,13 @@ async function moderate(type, id, newStatus) {
 
       if (!existing) {
         const { error: e2 } = await supa.from('showcase').insert({
-          type, url, thumbnail_url: thumbnailUrl, source_type: type, source_id: id, is_active: true, display_order: 0,
+          type, url,
+          thumbnail_url: thumbnailUrl,
+          source_type: type,
+          source_id: id,
+          user_id: row.user_id,   // RLS insert policy requires auth.uid() = user_id
+          is_active: true,
+          display_order: 0,
         });
         if (e2) throw e2;
       } else {
