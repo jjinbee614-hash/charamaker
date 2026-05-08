@@ -632,7 +632,7 @@ input:focus,textarea:focus,select:focus{border-color:rgba(167,139,250,.5)}
         <!-- Output -->
         <div class="card">
           <div class="card-title">🎭 Your Character</div>
-          <div class="prog" id="cc-prog"><span class="spin"></span><span id="cc-prog-msg">Working...</span></div>
+          <div class="prog" id="cc-prog"><span class="spin"></span><span id="cc-prog-msg">Working...</span><button onclick="cancelCurrentJob()" style="margin-left:1rem;background:transparent;border:1px solid var(--border);color:var(--muted);padding:.3rem .8rem;border-radius:6px;cursor:pointer;font-size:.78rem;font-family:inherit">Cancel</button></div>
           <div id="cc-result">
             <div id="cc-info" style="display:none;margin-bottom:1rem"></div>
             <div class="img-preview" id="cc-img-preview" style="margin-bottom:1rem">
@@ -718,7 +718,7 @@ input:focus,textarea:focus,select:focus{border-color:rgba(167,139,250,.5)}
         <!-- Output -->
         <div class="card">
           <div class="card-title">🖼️ Generated Image</div>
-          <div class="prog" id="img-prog"><span class="spin"></span><span id="img-prog-msg">Working...</span></div>
+          <div class="prog" id="img-prog"><span class="spin"></span><span id="img-prog-msg">Working...</span><button onclick="cancelCurrentJob()" style="margin-left:1rem;background:transparent;border:1px solid var(--border);color:var(--muted);padding:.3rem .8rem;border-radius:6px;cursor:pointer;font-size:.78rem;font-family:inherit">Cancel</button></div>
           <div class="img-preview" id="img-result">
             <div style="text-align:center;color:var(--muted);padding:2rem 1rem">
               <div style="font-size:2.5rem;margin-bottom:.6rem">🖼️</div>
@@ -768,7 +768,7 @@ input:focus,textarea:focus,select:focus{border-color:rgba(167,139,250,.5)}
         <!-- Output -->
         <div class="card">
           <div class="card-title">🎬 Generated Video</div>
-          <div class="prog" id="vid-prog"><span class="spin"></span><span id="vid-prog-msg">Working...</span></div>
+          <div class="prog" id="vid-prog"><span class="spin"></span><span id="vid-prog-msg">Working...</span><button onclick="cancelCurrentJob()" style="margin-left:1rem;background:transparent;border:1px solid var(--border);color:var(--muted);padding:.3rem .8rem;border-radius:6px;cursor:pointer;font-size:.78rem;font-family:inherit">Cancel</button></div>
           <div class="vid-preview" id="vid-result">
             <div style="text-align:center;color:var(--muted);padding:2rem 1rem">
               <div style="font-size:2.5rem;margin-bottom:.6rem">🎬</div>
@@ -862,7 +862,7 @@ async function signInWithGoogle() {
     if (error) throw error;
   } catch (e) {
     console.error('[auth] sign in failed:', e);
-    toast('Sign in failed: ' + (e.message || ''), 'err');
+    toastError(e, 'Sign in failed');
   }
 }
 
@@ -1169,6 +1169,84 @@ function toast(msg, type='ok') {
   toastT = setTimeout(() => el.classList.remove('show'), 3500);
 }
 
+// ═══════════════════════════════════════════════════════════
+// FRIENDLY ERROR MESSAGES
+// ═══════════════════════════════════════════════════════════
+// Maps raw technical errors to short, friendly user-facing strings.
+// Pattern is order-sensitive: first match wins. Add specific cases above generic ones.
+const ERROR_HINTS = [
+  // Network / connection
+  { match: /failed to fetch|network|err_failed|err_network/i,
+    say: 'Network issue — check your connection and try again.' },
+  { match: /timeout|timed out|aborted/i,
+    say: 'The request took too long. Please try again.' },
+  // Auth
+  { match: /not authenticated|auth.*required|jwt.*expired/i,
+    say: 'Please sign in again to continue.' },
+  { match: /403|forbidden|permission denied|row-level security/i,
+    say: "You don't have permission for that action." },
+  // Credits / quota
+  { match: /insufficient_credits|not enough credits/i,
+    say: 'Not enough credits. Top up to continue.' },
+  { match: /rate limit|too many requests|429/i,
+    say: "We're getting a lot of requests right now. Please wait a moment and try again." },
+  // Generation pipeline
+  { match: /atlas.*(?:failed|error)|generation failed/i,
+    say: 'Image generation failed. The model may be busy — please try again.' },
+  { match: /content.*(?:filter|moderation|policy|nsfw|inappropriate)/i,
+    say: 'Your prompt was flagged by our content filter. Try a different description.' },
+  { match: /face.*(?:not detected|not found|no face)/i,
+    say: "Couldn't detect a clear face in the image. Try a photo with the face more visible." },
+  { match: /video.*(?:duration|too long)/i,
+    say: 'Video is too long. Use a clip 15 seconds or shorter.' },
+  // Upload
+  { match: /file.*(?:too large|size limit)|max.*100/i,
+    say: 'File is too large. Maximum size is 100MB.' },
+  { match: /upload.*failed|invalid.*file/i,
+    say: 'Upload failed. Please try a different file.' },
+  // Generic 4xx / 5xx
+  { match: /^(40\d|404)/,
+    say: 'The request was invalid. Please refresh and try again.' },
+  { match: /^(50\d|502|503|504)/,
+    say: "Our servers are having a moment. Please try again in a few seconds." },
+];
+
+function friendlyError(err) {
+  const raw = (err?.message || err?.error || String(err || '')).slice(0, 500);
+  for (const hint of ERROR_HINTS) {
+    if (hint.match.test(raw)) return hint.say;
+  }
+  // Fallback: show first sentence of error or a generic message
+  const firstSentence = raw.split(/[.!?\n]/)[0].trim();
+  if (firstSentence && firstSentence.length < 120) return firstSentence;
+  return 'Something went wrong. Please try again.';
+}
+
+// Friendly error toast — use this instead of toast(e.message, 'err')
+function toastError(err, fallback) {
+  const msg = friendlyError(err) || fallback || 'Something went wrong.';
+  console.error('[error]', err); // keep raw error in console for debugging
+  toast(msg, 'err');
+}
+
+// Show a "failed + try again" UI inside a result container.
+// retryFn is a function that re-runs the action.
+function showRetryUI(containerId, errMessage, retryFn) {
+  const friendly = friendlyError({ message: errMessage });
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  // Stash the retry function on the element so the inline onclick can find it
+  el._retryFn = retryFn;
+  el.innerHTML = `
+    <div style="text-align:center;color:var(--muted);padding:1.5rem 1rem">
+      <div style="font-size:2.5rem;margin-bottom:.6rem">⚠️</div>
+      <div style="font-weight:700;color:var(--white);margin-bottom:.4rem">Generation failed</div>
+      <div style="font-size:.85rem;margin-bottom:1.2rem;line-height:1.5;max-width:340px;margin-left:auto;margin-right:auto">${escapeHtml(friendly)}</div>
+      <button class="btn btn-grad" onclick="document.getElementById('${containerId}')._retryFn?.()">↻ Try Again</button>
+    </div>
+  `;
+}
+
 function progShow(id, msg) {
   document.getElementById(`${id}-prog`).classList.add('show');
   document.getElementById(`${id}-prog-msg`).textContent = msg;
@@ -1176,6 +1254,10 @@ function progShow(id, msg) {
 function progHide(id) {
   document.getElementById(`${id}-prog`).classList.remove('show');
 }
+
+// Default no-op so the Cancel button never errors when no job is running.
+// pollAtlasJob overrides this with a real cancel function while a job is active.
+window.cancelCurrentJob = window.cancelCurrentJob || (() => {});
 
 function openModal(html) {
   document.getElementById('modal-content').innerHTML = html;
@@ -1243,7 +1325,7 @@ async function shareFromHistory(type, id) {
     loadCharacters(); // refresh history
   } catch (e) {
     console.error('[shareFromHistory]', e);
-    toast('Submit failed: ' + (e.message || ''), 'err');
+    toastError(e, 'Submit failed');
   }
 }
 
@@ -1491,7 +1573,8 @@ async function createCharacter() {
     await loadCharacters();
   } catch (e) {
     progHide('cc');
-    toast(e.message || 'Failed', 'err');
+    toastError(e, 'Failed');
+    showRetryUI('cc-img-preview', e?.message || 'failed', createCharacter);
   }
   btn.disabled = false; btn.textContent = '✦ Design My Character';
 }
@@ -1582,7 +1665,7 @@ async function generateImage() {
       else throw new Error(a.error || 'analysis failed');
     } catch (e) {
       progHide('img'); btn.disabled = false; btn.textContent = '✦ Generate Image';
-      toast('Reference analysis failed: ' + (e.message || ''), 'err');
+      toastError(e, 'Reference analysis failed');
       return;
     }
   }
@@ -1695,7 +1778,9 @@ async function generateImage() {
     progHide('img');
     toast('Image ready! ✓');
   } catch (e) {
-    progHide('img'); toast(e.message || 'Failed', 'err');
+    progHide('img'); toastError(e, 'Failed');
+    // Show inline retry UI in the result area
+    showRetryUI('img-result', e?.message || 'failed', generateImage);
     // Mark pending row as failed so user is not charged + UI reflects state
     if (pendingRowId) {
       await supa.from('images').update({ status: 'failed' }).eq('id', pendingRowId);
@@ -1804,7 +1889,8 @@ async function generateVideo() {
     progHide('vid');
     toast('Video ready! ✓');
   } catch (e) {
-    progHide('vid'); toast(e.message || 'Failed', 'err');
+    progHide('vid'); toastError(e, 'Failed');
+    showRetryUI('vid-result', e?.message || 'failed', generateVideo);
     if (pendingRowId) {
       await supa.from('videos').update({ status: 'failed' }).eq('id', pendingRowId);
     }
@@ -1856,17 +1942,29 @@ async function pollAtlasJob(atlasRequestId, progPrefix) {
   const isVideo = progPrefix === 'vid';
   const messages = isVideo ? VIDEO_LOADING_MESSAGES : IMAGE_LOADING_MESSAGES;
   const ESTIMATED_TOTAL_SEC = isVideo ? 480 : 90; // video: 8min, image: 1.5min
+  const MAX_CONSECUTIVE_ERRORS = 5; // bail out if status endpoint keeps failing
 
   return new Promise((resolve, reject) => {
     let polls = 0;
     const startTime = Date.now();
     let msgIndex = 0;
     let lastMsgChange = 0;
+    let consecutiveErrors = 0;
+    let cancelled = false;
+
+    // Expose cancel — user can call window.cancelCurrentJob() from a UI button
+    window.cancelCurrentJob = () => {
+      cancelled = true;
+      clearInterval(iv);
+      reject(new Error('Cancelled by user'));
+    };
 
     const iv = setInterval(async () => {
+      if (cancelled) return;
       try {
         const res = await fetch(`${API}/api/atlas/status?id=${encodeURIComponent(atlasRequestId)}`);
         const data = await res.json();
+        consecutiveErrors = 0; // reset on any successful response
 
         if (data.status === 'done') {
           clearInterval(iv);
@@ -1906,12 +2004,20 @@ async function pollAtlasJob(atlasRequestId, progPrefix) {
         let displayMsg = `${currentMsg}  ·  ${pct}%  ·  ${elapsedStr}`;
         const longThreshold = isVideo ? 10 : 3;
         if (elapsedMin >= longThreshold) {
-          displayMsg += ' (taking longer than usual, hang tight)';
+          displayMsg += ' (taking longer than usual)';
         }
         progShow(progPrefix, displayMsg);
 
-        if (++polls > 300) { clearInterval(iv); reject(new Error('Timeout (20 min)')); }
-      } catch (e) { clearInterval(iv); reject(e); }
+        if (++polls > 300) { clearInterval(iv); reject(new Error('Timeout (20 min) — the model may be overloaded.')); }
+      } catch (e) {
+        consecutiveErrors++;
+        console.warn(`[pollAtlas] error ${consecutiveErrors}/${MAX_CONSECUTIVE_ERRORS}:`, e.message);
+        if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
+          clearInterval(iv);
+          reject(new Error('Connection lost — please check your network and try again.'));
+        }
+        // else: tolerate transient errors and keep polling
+      }
     }, 4000);
   });
 }
@@ -2156,7 +2262,7 @@ async function handleExtraImageUpload(event, prefix) {
     toast('Image added ✓');
   } catch (e) {
     console.error('[ExtraUpload]', e);
-    toast(e.message || 'Upload failed', 'err');
+    toastError(e, 'Upload failed');
   }
   // Reset input so same file can be re-uploaded
   event.target.value = '';
@@ -2427,7 +2533,7 @@ async function deleteCharacter(id, name) {
     await loadCharacters();
   } catch (e) {
     console.error('[deleteCharacter]', e);
-    toast('Delete failed: ' + (e.message || ''), 'err');
+    toastError(e, 'Delete failed');
   }
 }
 
@@ -2441,7 +2547,7 @@ async function deleteAsset(type, id) {
     await loadHistory();
   } catch (e) {
     console.error('[deleteAsset]', e);
-    toast('Delete failed: ' + (e.message || ''), 'err');
+    toastError(e, 'Delete failed');
   }
 }
 
@@ -2504,7 +2610,7 @@ async function shareCharacter() {
     toast('Submitted! We\'ll review it shortly ✓');
   } catch (e) {
     console.error('[shareCharacter]', e);
-    toast('Submit failed: ' + (e.message || ''), 'err');
+    toastError(e, 'Submit failed');
   }
 }
 
@@ -2534,7 +2640,7 @@ async function shareToGallery(type) {
     toast('Submitted! We\'ll review it shortly ✓');
   } catch (e) {
     console.error('[shareToGallery]', e);
-    toast('Submit failed: ' + (e.message || ''), 'err');
+    toastError(e, 'Submit failed');
   }
 }
 
