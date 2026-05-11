@@ -39,7 +39,7 @@
 <link rel="manifest" href="/site.webmanifest">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config.js"></script>
+<script src="/config.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -199,7 +199,6 @@ input:focus,textarea:focus,select:focus{border-color:rgba(167,139,250,.5)}
 .img-preview{width:100%;min-height:200px;background:var(--s2);border:1px solid var(--border);border-radius:10px;overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.85rem}
 .img-preview img{width:100%;height:auto;display:block;cursor:pointer}
 .img-preview:has(img){min-height:0}
-/* When empty (placeholder text), keep a square shape; when populated, follow image natural ratio */
 .img-preview:not(:has(img)){aspect-ratio:1/1}
 
 .vid-preview{width:100%;min-height:200px;background:var(--s2);border:1px solid var(--border);border-radius:10px;overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.85rem}
@@ -284,16 +283,10 @@ input:focus,textarea:focus,select:focus{border-color:rgba(167,139,250,.5)}
 .sb-credits .cb-icon{font-size:1.2rem}
 .sb-credits .cb-amt{font-weight:700;font-size:.9rem;color:var(--white);font-family:'Syne',sans-serif;letter-spacing:-.01em}
 .sb-credits .cb-plan{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
-.sb-credits .cb-buy{
-  width:28px;height:28px;border-radius:8px;
-  background:var(--grad);color:#fff;
-  display:flex;align-items:center;justify-content:center;
-  font-size:1.1rem;font-weight:700;
-  text-decoration:none;
-  transition:transform .15s;
-  flex-shrink:0;
-}
+.sb-credits .cb-buy{width:28px;height:28px;border-radius:8px;background:var(--grad);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:700;text-decoration:none;transition:transform .15s;flex-shrink:0;line-height:1}
 .sb-credits .cb-buy:hover{transform:translateY(-1px) scale(1.05)}
+@keyframes pulseBuy{0%,100%{box-shadow:0 0 0 0 rgba(167,139,250,.6)}50%{box-shadow:0 0 0 8px rgba(167,139,250,0)}}
+.sb-credits .cb-buy.pulse{animation:pulseBuy 2s infinite}
 
 /* Out-of-credits modal */
 .credits-modal{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:9999;backdrop-filter:blur(8px)}
@@ -345,7 +338,6 @@ input:focus,textarea:focus,select:focus{border-color:rgba(167,139,250,.5)}
 .gallery-item{position:relative;background:var(--s2);border:1px solid var(--border);border-radius:12px;overflow:hidden;cursor:pointer;transition:transform .25s, border-color .25s;break-inside:avoid;margin-bottom:.8rem;display:block}
 .gallery-item:hover{transform:translateY(-2px);border-color:rgba(167,139,250,.35)}
 .gallery-item img,.gallery-item video{width:100%;height:auto;display:block;background:var(--s3)}
-/* Loading skeleton — placeholder height until image loads */
 .gallery-item img:not(.loaded),.gallery-item video:not(.loaded){min-height:200px;aspect-ratio:1/1}
 .gallery-item img.loaded,.gallery-item video.loaded{aspect-ratio:auto}
 @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
@@ -838,15 +830,15 @@ const supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 // ═══════════════════════════════════════════════════════════
 const S = {
   tab: 'character',
-  user: null,       // current authenticated user (null when signed out)
-  characters: [],   // all loaded characters
-  ccCharacter: null,    // currently designed character (not yet saved)
-  ccRefImageUrl: null,  // reference for character creation
+  user: null,
+  characters: [],
+  ccCharacter: null,
+  ccRefImageUrl: null,
   imgRefImageUrl: null,
-  imgAspectRatio: '',  // '', '1:1', '9:16', '16:9' — empty means auto // reference for image generation
-  imgRefImageDataUrl: null, // base64 for analysis
+  imgAspectRatio: '',
+  imgRefImageDataUrl: null,
   vidRefVideoUrl: null,
-  vidRefVideoDuration: 0,  // seconds — used for video credit cost calculation
+  vidRefVideoDuration: 0,
   imgSelectedProfileId: null,
   vidSelectedProfileId: null,
   lastImage: null,
@@ -856,8 +848,6 @@ const S = {
 // ═══════════════════════════════════════════════════════════
 // AUTH
 // ═══════════════════════════════════════════════════════════
-
-// Open the auth modal. Optional `reason` shows what action triggered the prompt.
 function openAuthModal(reason) {
   const sub = document.getElementById('auth-modal-sub');
   if (sub) {
@@ -897,15 +887,12 @@ async function signOut() {
   }
 }
 
-// Require login before running an action. Returns true if logged in,
-// otherwise opens the auth modal and returns false.
 function requireAuth(reason) {
   if (S.user) return true;
   openAuthModal(reason);
   return false;
 }
 
-// Render the bottom-of-sidebar user widget based on auth state.
 function renderUserWidget() {
   const el = document.getElementById('sb-user-area');
   if (!el) return;
@@ -928,19 +915,17 @@ function renderUserWidget() {
   }
 }
 
-// Tiny escape (escapeHtml is defined later for the gallery)
 function escapeHtmlOrReturn(s) {
   return String(s || '').replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
-// On boot: pull the current session and listen for changes.
 async function initAuth() {
   const { data: { session } } = await supa.auth.getSession();
   S.user = session?.user || null;
   renderUserWidget();
   if (S.user) {
-    loadCredits(); // load balance on app boot
-    resumePendingJobs(); // resume any in-flight image/video generation from previous session
+    loadCredits();
+    resumePendingJobs();
   }
 
   supa.auth.onAuthStateChange((event, sess) => {
@@ -948,14 +933,12 @@ async function initAuth() {
     S.user = sess?.user || null;
     renderUserWidget();
     if (!wasSignedIn && S.user) {
-      // User just signed in — close any open auth modal and reload data
       closeAuthModal();
       toast(`Welcome, ${S.user.user_metadata?.name || 'friend'}! ✓`);
       loadCharacters();
       loadCredits();
       resumePendingJobs();
     } else if (wasSignedIn && !S.user) {
-      // Signed out
       S.characters = [];
       S.credits = null;
       renderCreditsBadge();
@@ -964,7 +947,6 @@ async function initAuth() {
 }
 initAuth();
 
-// Render presets for the default-active character tab on boot
 window.addEventListener('DOMContentLoaded', () => {
   if (typeof renderPromptPresets === 'function') {
     renderPromptPresets('cc-presets', 'cc-appearance', CHARACTER_PRESETS);
@@ -974,30 +956,19 @@ window.addEventListener('DOMContentLoaded', () => {
 // ═══════════════════════════════════════════════════════════
 // CREDITS SYSTEM
 // ═══════════════════════════════════════════════════════════
-
-// Credit costs (kept in sync with server-side spend_credits calls)
-// Image gen and character creation: 100c each.
-// Video pricing is tiered by duration: every 5-second block adds 200c.
-//   1-5s   → 500c
-//   6-10s  → 700c
-//   11-15s → 900c
 const CREDIT_COSTS = {
   character: 100,
   image: 100,
-  video_base: 500,            // ≤ 5 seconds
-  video_per_extra_block: 200, // each additional 5-second block
+  video_base: 500,
+  video_per_extra_block: 200,
 };
 
-// Compute video cost based on duration in seconds
-// Tiered in 5-second blocks: 1-5s → 500c, 6-10s → 700c, 11-15s → 900c
 function videoCreditCost(seconds) {
   const s = Math.max(1, Math.ceil(seconds || 5));
   const blocks = Math.ceil(s / 5);
   return CREDIT_COSTS.video_base + Math.max(0, blocks - 1) * CREDIT_COSTS.video_per_extra_block;
 }
 
-// Update the Generate Video button label to reflect the actual cost
-// based on the uploaded reference video's duration.
 function updateVideoButtonText() {
   const btn = document.getElementById('vid-btn');
   if (!btn) return;
@@ -1011,14 +982,13 @@ function updateVideoButtonText() {
   btn.textContent = `✦ Generate Video · ${cost.toLocaleString()} credits (${sec}s)`;
 }
 
-// Cache the user's current credit balance and plan
-S.credits = null;       // null = not loaded; -1 = admin (unlimited)
+S.credits = null;
 S.plan = 'free';
 
 async function loadCredits() {
   if (!S.user) { S.credits = null; renderCreditsBadge(); return; }
   if (S.user.app_metadata?.is_admin) {
-    S.credits = -1; // sentinel: unlimited
+    S.credits = -1;
     S.plan = 'admin';
     renderCreditsBadge();
     return;
@@ -1050,20 +1020,21 @@ function renderCreditsBadge() {
     `;
   } else {
     const planLabel = (S.plan || 'free').charAt(0).toUpperCase() + (S.plan || 'free').slice(1);
+    const lowCredits = (S.credits ?? 0) < 200;
+    const buyClass = lowCredits ? 'cb-buy pulse' : 'cb-buy';
     el.innerHTML = `
       <span class="cb-icon">⚡</span>
       <div style="flex:1">
         <div class="cb-amt">${(S.credits ?? 0).toLocaleString()}</div>
         <div class="cb-plan">${planLabel} plan</div>
       </div>
-      <a href="/pricing" class="cb-buy" title="Buy more credits">+</a>
+      <a href="/pricing" class="${buyClass}" title="Buy more credits">+</a>
     `;
   }
 }
 
-// Try to spend credits via the SQL RPC. Returns the new balance, or throws.
 async function spendCredits(amount, reason, refId, metadata) {
-  if (S.credits === -1) return -1; // admin bypass
+  if (S.credits === -1) return -1;
   const { data, error } = await supa.rpc('spend_credits', {
     p_amount: amount,
     p_reason: reason,
@@ -1081,7 +1052,6 @@ async function spendCredits(amount, reason, refId, metadata) {
   return data;
 }
 
-// Open the "out of credits" modal
 function openOutOfCreditsModal(needed, action) {
   const modal = document.getElementById('credits-modal');
   const have = (S.credits ?? 0).toLocaleString();
@@ -1095,21 +1065,17 @@ function closeCreditsModal() {
   document.getElementById('credits-modal').classList.remove('show');
 }
 
-// Pre-flight check: is the user able to spend `amount` right now?
 function canSpend(amount) {
-  if (S.credits === -1) return true; // admin
+  if (S.credits === -1) return true;
   return (S.credits ?? 0) >= amount;
 }
 
 // ═══════════════════════════════════════════════════════════
 // BACKGROUND JOB RECOVERY
 // ═══════════════════════════════════════════════════════════
-// On app boot or sign-in, check if the user has any pending image/video jobs
-// from a previous session (browser closed, page reloaded, etc.) and resume polling.
 async function resumePendingJobs() {
   if (!S.user) return;
   try {
-    // Find pending image jobs from this user (last 30 minutes — older ones likely dead)
     const cutoff = new Date(Date.now() - 30 * 60 * 1000).toISOString();
 
     const { data: pendingImgs } = await supa
@@ -1133,17 +1099,14 @@ async function resumePendingJobs() {
     const totalPending = (pendingImgs?.length || 0) + (pendingVids?.length || 0);
     if (!totalPending) return;
 
-    // Mark older-than-30min as failed (cleanup)
     const ancient = new Date(Date.now() - 30 * 60 * 1000).toISOString();
     await supa.from('images').update({ status: 'failed' })
       .eq('user_id', S.user.id).eq('status', 'pending').lt('created_at', ancient);
     await supa.from('videos').update({ status: 'failed' })
       .eq('user_id', S.user.id).eq('status', 'pending').lt('created_at', ancient);
 
-    // Show a heads-up toast
     toast(`Resuming ${totalPending} in-progress job${totalPending > 1 ? 's' : ''}...`);
 
-    // Resume image polling in the background
     for (const row of (pendingImgs || [])) {
       if (!row.atlas_request_id) continue;
       resumeImageJob(row).catch(e => console.warn('[resume img]', e.message));
@@ -1162,7 +1125,6 @@ async function resumeImageJob(row) {
     progShow('img', 'Resuming previous image job...');
     const url = await pollAtlasJob(row.atlas_request_id, 'img');
     await supa.from('images').update({ image_url: url, status: 'completed' }).eq('id', row.id);
-    // Spend credits now that we have a confirmed result (idempotent — only once)
     try { await spendCredits(CREDIT_COSTS.image, 'spend_image', row.id); } catch (e) { console.warn('[credits]', e); }
     toast('Image ready ✓ (from previous session) — check History');
     loadCharacters();
@@ -1189,13 +1151,11 @@ async function resumeVideoJob(row) {
 }
 
 // ═══════════════════════════════════════════════════════════
-// LANDING PAGE INIT (gallery preview + scroll reveals)
+// LANDING PAGE INIT
 // ═══════════════════════════════════════════════════════════
 async function initLanding() {
-  // Load showcase items into the landing gallery (mixed types, all)
   await loadGallery('home-landing-gallery', null);
 
-  // IntersectionObserver for fade-in-on-scroll
   const reveals = document.querySelectorAll('.reveal');
   if (reveals.length && 'IntersectionObserver' in window) {
     const obs = new IntersectionObserver((entries) => {
@@ -1211,7 +1171,6 @@ async function initLanding() {
     reveals.forEach(el => el.classList.add('visible'));
   }
 }
-// Defer until full DOM + script load (loadGallery is defined later in the file)
 window.addEventListener('load', initLanding);
 
 // ═══════════════════════════════════════════════════════════
@@ -1225,28 +1184,19 @@ function toast(msg, type='ok') {
   toastT = setTimeout(() => el.classList.remove('show'), 3500);
 }
 
-// ═══════════════════════════════════════════════════════════
-// FRIENDLY ERROR MESSAGES
-// ═══════════════════════════════════════════════════════════
-// Maps raw technical errors to short, friendly user-facing strings.
-// Pattern is order-sensitive: first match wins. Add specific cases above generic ones.
 const ERROR_HINTS = [
-  // Network / connection
   { match: /failed to fetch|network|err_failed|err_network/i,
     say: 'Network issue — check your connection and try again.' },
   { match: /timeout|timed out|aborted/i,
     say: 'The request took too long. Please try again.' },
-  // Auth
   { match: /not authenticated|auth.*required|jwt.*expired/i,
     say: 'Please sign in again to continue.' },
   { match: /403|forbidden|permission denied|row-level security/i,
     say: "You don't have permission for that action." },
-  // Credits / quota
   { match: /insufficient_credits|not enough credits/i,
     say: 'Not enough credits. Top up to continue.' },
   { match: /rate limit|too many requests|429/i,
     say: "We're getting a lot of requests right now. Please wait a moment and try again." },
-  // Generation pipeline
   { match: /atlas.*(?:failed|error)|generation failed/i,
     say: 'Image generation failed. The model may be busy — please try again.' },
   { match: /content.*(?:filter|moderation|policy|nsfw|inappropriate)/i,
@@ -1255,12 +1205,10 @@ const ERROR_HINTS = [
     say: "Couldn't detect a clear face in the image. Try a photo with the face more visible." },
   { match: /video.*(?:duration|too long)/i,
     say: 'Video is too long. Use a clip 15 seconds or shorter.' },
-  // Upload
   { match: /file.*(?:too large|size limit)|max.*100/i,
     say: 'File is too large. Maximum size is 100MB.' },
   { match: /upload.*failed|invalid.*file/i,
     say: 'Upload failed. Please try a different file.' },
-  // Generic 4xx / 5xx
   { match: /^(40\d|404)/,
     say: 'The request was invalid. Please refresh and try again.' },
   { match: /^(50\d|502|503|504)/,
@@ -1272,26 +1220,21 @@ function friendlyError(err) {
   for (const hint of ERROR_HINTS) {
     if (hint.match.test(raw)) return hint.say;
   }
-  // Fallback: show first sentence of error or a generic message
   const firstSentence = raw.split(/[.!?\n]/)[0].trim();
   if (firstSentence && firstSentence.length < 120) return firstSentence;
   return 'Something went wrong. Please try again.';
 }
 
-// Friendly error toast — use this instead of toast(e.message, 'err')
 function toastError(err, fallback) {
   const msg = friendlyError(err) || fallback || 'Something went wrong.';
-  console.error('[error]', err); // keep raw error in console for debugging
+  console.error('[error]', err);
   toast(msg, 'err');
 }
 
-// Show a "failed + try again" UI inside a result container.
-// retryFn is a function that re-runs the action.
 function showRetryUI(containerId, errMessage, retryFn) {
   const friendly = friendlyError({ message: errMessage });
   const el = document.getElementById(containerId);
   if (!el) return;
-  // Stash the retry function on the element so the inline onclick can find it
   el._retryFn = retryFn;
   el.innerHTML = `
     <div style="text-align:center;color:var(--muted);padding:1.5rem 1rem">
@@ -1311,8 +1254,6 @@ function progHide(id) {
   document.getElementById(`${id}-prog`).classList.remove('show');
 }
 
-// Default no-op so the Cancel button never errors when no job is running.
-// pollAtlasJob overrides this with a real cancel function while a job is active.
 window.cancelCurrentJob = window.cancelCurrentJob || (() => {});
 
 function openModal(html) {
@@ -1323,8 +1264,6 @@ function closeModal() {
   document.getElementById('modal').classList.remove('show');
 }
 
-// ── History modal: media + Share-to-gallery button + close-on-outside ──
-// Used when the user clicks any item in the History tab. Lets them share old work.
 function openHistoryModal(type, id, url, status) {
   const isVideo = type === 'video';
   const isCharacter = type === 'character';
@@ -1333,7 +1272,6 @@ function openHistoryModal(type, id, url, status) {
     ? `<video src="${url}" controls loop autoplay style="max-width:90vw;max-height:80vh;display:block;border-radius:14px;margin:0 auto"></video>`
     : `<img src="${url}" style="max-width:90vw;max-height:80vh;display:block;border-radius:14px;margin:0 auto">`;
 
-  // Share button reflects current status
   let shareBtn = '';
   if (S.user) {
     const stat = status || 'none';
@@ -1362,8 +1300,6 @@ function openHistoryModal(type, id, url, status) {
   document.getElementById('modal').classList.add('show');
 }
 
-// Share a row from the History tab (instead of the result screen).
-// Reuses the same gallery_status -> 'pending' update pattern.
 async function shareFromHistory(type, id) {
   if (!requireAuth('Sign in to share to the gallery.')) return;
   if (!confirm('Share this to the public gallery?\n\nIt will be reviewed before appearing in the gallery.')) return;
@@ -1378,7 +1314,7 @@ async function shareFromHistory(type, id) {
     if (error) throw error;
     closeModal();
     toast('Submitted! We\'ll review it shortly ✓');
-    loadCharacters(); // refresh history
+    loadCharacters();
   } catch (e) {
     console.error('[shareFromHistory]', e);
     toastError(e, 'Submit failed');
@@ -1436,7 +1372,6 @@ async function handleRefImage(event, prefix) {
   if (!file) return;
   toast('Uploading reference image...', 'info');
 
-  // Show local thumbnail immediately
   const reader = new FileReader();
   reader.onload = e => {
     const thumbUrl = e.target.result;
@@ -1462,7 +1397,6 @@ async function handleRefImage(event, prefix) {
     if (prefix === 'cc') S.ccRefImageUrl = data.url;
     if (prefix === 'img') S.imgRefImageUrl = data.url;
 
-    // Update with success state, keep thumbnail
     const reader2 = new FileReader();
     reader2.onload = e => {
       document.getElementById(`${prefix}-ref-zone`).classList.add('has-file');
@@ -1493,7 +1427,6 @@ async function handleRefVideo(event) {
   if (!file) return;
   if (file.size > 100 * 1024 * 1024) { toast('File too large. Max 100MB.', 'err'); return; }
 
-  // Check video duration (must be ≤ 15 seconds)
   const localUrl = URL.createObjectURL(file);
   const duration = await new Promise((resolve, reject) => {
     const v = document.createElement('video');
@@ -1505,14 +1438,13 @@ async function handleRefVideo(event) {
 
   if (duration && duration > 15.5) {
     toast(`Video is ${duration.toFixed(1)}s — must be 15 seconds or less`, 'err');
-    event.target.value = ''; // reset input
+    event.target.value = '';
     URL.revokeObjectURL(localUrl);
     return;
   }
 
   toast('Uploading video...', 'info');
 
-  // Show video thumbnail (first frame)
   document.getElementById('vid-ref-display').innerHTML = `
     <div style="display:flex;gap:.7rem;align-items:center;text-align:left">
       <video src="${localUrl}" style="width:48px;height:48px;border-radius:6px;object-fit:cover;flex-shrink:0" muted></video>
@@ -1559,7 +1491,6 @@ async function handleRefVideo(event) {
 async function createCharacter() {
   if (!requireAuth('Sign in to design your AI character.')) return;
 
-  // Pre-flight credit check
   const cost = CREDIT_COSTS.character;
   if (!canSpend(cost)) {
     openOutOfCreditsModal(cost, 'create a character');
@@ -1571,13 +1502,11 @@ async function createCharacter() {
   const niche = document.getElementById('cc-niche').value.trim();
   const persona = document.getElementById('cc-persona').value.trim();
 
-  // Allow empty input — AI will decide everything
   const btn = document.getElementById('cc-btn');
   btn.disabled = true; btn.textContent = 'Designing...';
   progShow('cc', 'Designing character profile...');
 
   try {
-    // Step 1: Claude builds the persona
     const designRes = await fetch(`${API}/api/character`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, appearance, niche, persona, reference_image_url: S.ccRefImageUrl })
@@ -1586,7 +1515,6 @@ async function createCharacter() {
     if (!design.ok) throw new Error(design.error || 'design failed');
     const character = design.character;
 
-    // Step 2: Generate profile image
     progShow('cc', 'Generating profile image (1-2 min)...');
     const imgRes = await fetch(`${API}/api/character/image`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -1595,21 +1523,16 @@ async function createCharacter() {
     const imgData = await imgRes.json();
     if (!imgData.ok) throw new Error(imgData.error || 'image submit failed');
 
-    console.log('[CC] imgData received:', imgData);
     let imageUrl;
     if (imgData.sync && imgData.output) {
       imageUrl = imgData.output;
-      console.log('[CC] sync path, imageUrl:', imageUrl);
     } else if (imgData.provider === 'atlas_image' && imgData.atlas_request_id) {
       progShow('cc', 'Generating profile image (~1 min)...');
-      console.log('[CC] starting atlas poll for:', imgData.atlas_request_id);
       imageUrl = await pollAtlasJob(imgData.atlas_request_id, 'cc');
-      console.log('[CC] atlas poll resolved, imageUrl:', imageUrl);
     } else {
       imageUrl = await pollJob(imgData.model, imgData.request_id, 'cc', 'Rendering character face...', imgData.status_url);
     }
 
-    console.log('[CC] saving to Supabase, imageUrl:', imageUrl);
     progShow('cc', 'Saving to your library...');
     const { data: saved, error } = await supa.from('characters').insert({
       user_id: S.user.id,
@@ -1622,14 +1545,9 @@ async function createCharacter() {
       reference_image_url: S.ccRefImageUrl,
     }).select().single();
 
-    if (error) {
-      console.error('[CC] Supabase save error:', error);
-      throw new Error('DB save failed: ' + error.message);
-    }
-    console.log('[CC] saved record:', saved);
+    if (error) throw new Error('DB save failed: ' + error.message);
 
     S.ccCharacter = saved;
-    // Spend credits (after success). RLS prevents users from manipulating this.
     try { await spendCredits(CREDIT_COSTS.character, 'spend_character', saved.id); } catch (e) { console.warn('[credits]', e); }
     progHide('cc');
     renderCharacterResult(saved);
@@ -1644,7 +1562,6 @@ async function createCharacter() {
 }
 
 function renderCharacterResult(c) {
-  // Top: name + niche + persona card
   document.getElementById('cc-info').style.display = 'block';
   document.getElementById('cc-info').innerHTML = `
     <div class="char-card">
@@ -1653,9 +1570,7 @@ function renderCharacterResult(c) {
       ${c.persona ? `<div class="char-card-persona">${c.persona}</div>` : ''}
     </div>
   `;
-  // Middle: profile image with error handlers for debugging
-  document.getElementById('cc-img-preview').innerHTML = `<img src="${c.image_url}" alt="${c.name}" onclick="openModal('<img src=\\'${c.image_url}\\'>')" onerror="console.error('[render] IMAGE LOAD FAILED:', this.src);" onload="console.log('[render] image loaded successfully')">`;
-  // Bottom: appearance details
+  document.getElementById('cc-img-preview').innerHTML = `<img src="${c.image_url}" alt="${c.name}" onclick="openModal('<img src=\\'${c.image_url}\\'>')">`;
   if (c.appearance) {
     document.getElementById('cc-traits').style.display = 'block';
     document.getElementById('cc-traits').innerHTML = `
@@ -1667,7 +1582,6 @@ function renderCharacterResult(c) {
   }
   document.getElementById('cc-actions').style.display = 'flex';
 
-  // Show share button (state-aware: none/pending/approved/rejected)
   const shareBtn = document.getElementById('cc-share-btn');
   if (shareBtn) {
     shareBtn.style.display = 'flex';
@@ -1690,13 +1604,12 @@ function renderCharacterResult(c) {
 }
 
 // ═══════════════════════════════════════════════════════════
-// 2. GENERATE IMAGE
+// 2. GENERATE IMAGE — 강화된 피부색 일치 prompt
 // ═══════════════════════════════════════════════════════════
 async function generateImage() {
   if (!requireAuth('Sign in to generate images.')) return;
   if (!S.imgSelectedProfileId) { toast('Select a profile first', 'err'); return; }
 
-  // Pre-flight credit check
   const cost = CREDIT_COSTS.image;
   if (!canSpend(cost)) {
     openOutOfCreditsModal(cost, 'generate an image');
@@ -1715,7 +1628,6 @@ async function generateImage() {
   const btn = document.getElementById('img-btn');
   btn.disabled = true; btn.textContent = 'Generating...';
 
-  // Step 1: If reference uploaded, analyze it with Claude
   let analyzedPrompt = '';
   if (hasRef) {
     progShow('img', 'Analyzing reference image with AI...');
@@ -1734,32 +1646,32 @@ async function generateImage() {
     }
   }
 
-  // Combine prompts: user text + analyzed reference (no faces)
   let finalPrompt;
   if (userPrompt && analyzedPrompt) {
     finalPrompt = `${analyzedPrompt}, ${userPrompt}`;
   } else {
     finalPrompt = userPrompt || analyzedPrompt;
   }
-  // Strong identity-preservation directive at the top.
-  // The model gets explicit instructions to keep the input face EXACTLY,
-  // and to only change the scene/clothing/pose described after.
+  
+  // ═══════════════════════════════════════════════════
+  // 강화된 IDENTITY + SKIN TONE 통일 prompt
+  // ═══════════════════════════════════════════════════
   finalPrompt = [
-    'KEEP THE EXACT SAME PERSON from the input image — preserve facial features (eye shape, nose, mouth, face proportions), skin tone, AND hair (same color, same length, same style, same parting) 100% identical.',
-    'DO NOT redesign the face or hair. DO NOT change hair color, hair length, or hairstyle. Only change the scene, clothing, pose, and background as described below.',
-    'Photorealistic photo of the same person from the input image — same face, same hair — in this new scene:',
-    finalPrompt
+    'KEEP THE EXACT SAME PERSON from the input image — preserve facial features (eye shape, nose, mouth, face proportions), AND hair (same color, same length, same style, same parting) 100% identical.',
+    'CRITICAL SKIN TONE CONSISTENCY: The input profile image is the master reference for skin tone. The face, neck, shoulders, chest, arms, hands, legs — every visible skin area in the output must perfectly match the input image\'s skin tone, undertone, and complexion. There must be ZERO color difference between the face and the body. Do not lighten, darken, or shift the skin tone for any reason — match the input exactly.',
+    'DO NOT redesign the face or hair. DO NOT change hair color, hair length, or hairstyle. DO NOT change the skin tone. Only change the scene, clothing, pose, and background as described below.',
+    'Photorealistic photo of the same person from the input image — same face, same hair, same skin tone throughout — in this new scene:',
+    finalPrompt,
+    'AVOID: skin color mismatch between face and body, two-tone skin, face lighter than body, face darker than body, makeup line at the jaw, neck color different from face, mask-like face effect, visible color boundary at the neck or collarbone.'
   ].join(' ');
 
   console.log('[generateImage] final prompt:', finalPrompt);
 
   progShow('img', 'Generating image (1-2 min)...');
 
-  let pendingRowId = null;  // declared outside try so catch can mark it failed
+  let pendingRowId = null;
 
   try {
-    // If user picked a non-1:1 ratio, extend the profile image client-side first.
-    // This gives the model an input that already has the target aspect ratio.
     let profileUrlForGen = profile.image_url;
     if (S.imgAspectRatio && S.imgAspectRatio !== '1:1') {
       progShow('img', `Preparing ${S.imgAspectRatio} canvas...`);
@@ -1772,22 +1684,18 @@ async function generateImage() {
         profile_image_url: profileUrlForGen,
         prompt: finalPrompt,
         aspect_ratio: S.imgAspectRatio || null,
-        // Do NOT pass reference_image_url — we extracted its info into the prompt instead
       })
     });
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || 'submit failed');
 
-    // ── Background-friendly flow ──
-    // Insert a 'pending' row right after submit so this job survives reload.
-    // The poll runs as before, but on completion we UPDATE this row instead of INSERT.
     const atlasReqId = data.atlas_request_id || data.request_id || null;
     if (atlasReqId) {
       const { data: pending } = await supa.from('images').insert({
         user_id: S.user.id,
         character_id: profile.id,
-        image_url: '',  // not yet ready
-        prompt,
+        image_url: '',
+        prompt: finalPrompt,
         reference_image_url: S.imgRefImageUrl,
         atlas_request_id: atlasReqId,
         status: 'pending',
@@ -1796,7 +1704,6 @@ async function generateImage() {
       S.lastImageRowId = pendingRowId;
     }
 
-    // Helper: show a non-blocking note that the user can leave & come back
     progShow('img', `Generating image — feel free to do other things, your result will appear in History.`);
 
     let url;
@@ -1809,7 +1716,6 @@ async function generateImage() {
       url = await pollJob(data.model, data.request_id, 'img', 'Rendering image...', data.status_url);
     }
 
-    // Either UPDATE the pending row (background flow) or INSERT (fallback for sync results)
     let imgRow;
     if (pendingRowId) {
       const { data: updated } = await supa
@@ -1823,7 +1729,7 @@ async function generateImage() {
         user_id: S.user.id,
         character_id: profile.id,
         image_url: url,
-        prompt,
+        prompt: finalPrompt,
         reference_image_url: S.imgRefImageUrl,
         status: 'completed',
       }).select().single();
@@ -1843,9 +1749,7 @@ async function generateImage() {
     toast('Image ready! ✓');
   } catch (e) {
     progHide('img'); toastError(e, 'Failed');
-    // Show inline retry UI in the result area
     showRetryUI('img-result', e?.message || 'failed', generateImage);
-    // Mark pending row as failed so user is not charged + UI reflects state
     if (pendingRowId) {
       await supa.from('images').update({ status: 'failed' }).eq('id', pendingRowId);
     }
@@ -1861,7 +1765,6 @@ async function generateVideo() {
   if (!S.vidSelectedProfileId) { toast('Select a profile first', 'err'); return; }
   if (!S.vidRefVideoUrl) { toast('Upload a reference video', 'err'); return; }
 
-  // Pre-flight credit check (cost depends on video duration)
   const cost = videoCreditCost(S.vidRefVideoDuration);
   if (!canSpend(cost)) {
     openOutOfCreditsModal(cost, `generate a ${Math.ceil(S.vidRefVideoDuration || 5)}s video`);
@@ -1875,7 +1778,7 @@ async function generateVideo() {
   btn.disabled = true; btn.textContent = 'Processing...';
   progShow('vid', 'Step 1: Extracting frame from video...');
 
-  let pendingRowId = null;  // declared outside try so catch can mark it failed
+  let pendingRowId = null;
 
   try {
     const res = await fetch(`${API}/api/video`, {
@@ -1888,7 +1791,6 @@ async function generateVideo() {
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || 'submit failed');
 
-    // ── Background-friendly flow ──
     const atlasReqId = data.atlas_request_id || data.request_id || null;
     if (atlasReqId) {
       const { data: pending } = await supa.from('videos').insert({
@@ -1917,7 +1819,6 @@ async function generateVideo() {
       url = await pollJob(data.model, data.request_id, 'vid', 'Rendering final video...', data.status_url);
     }
 
-    // Either UPDATE the pending row or INSERT (sync fallback)
     let vidRow;
     if (pendingRowId) {
       const { data: updated } = await supa
@@ -1963,16 +1864,14 @@ async function generateVideo() {
 }
 
 // ═══════════════════════════════════════════════════════════
-// JOB POLLING (uses model path + request_id)
+// JOB POLLING
 // ═══════════════════════════════════════════════════════════
-// Rotating story-driven messages for video generation
-// (estimated ~8 min total: messages cycle through realistic stages)
 const VIDEO_LOADING_MESSAGES = [
   '🎬 Analyzing reference video frames...',
   '🎭 Mapping your character\'s facial features...',
   '👁️  Capturing eye details and expression...',
   '💇 Preserving hairstyle and texture...',
-  '✨ Matching skin tone and lighting...',
+  '✨ Matching skin tone across face and body...',
   '🎨 Blending facial proportions...',
   '🌟 Refining micro-expressions...',
   '🎥 Tracking motion frame by frame...',
@@ -1991,7 +1890,7 @@ const IMAGE_LOADING_MESSAGES = [
   '👁️  Refining facial features...',
   '✨ Detailing eye color and shape...',
   '💇 Sculpting hair texture and flow...',
-  '🌟 Adjusting skin tone for natural glow...',
+  '🌟 Matching skin tone face to body...',
   '👗 Rendering outfit details...',
   '💎 Adding accessories and jewelry...',
   '☀️  Setting up natural lighting...',
@@ -2002,11 +1901,10 @@ const IMAGE_LOADING_MESSAGES = [
 ];
 
 async function pollAtlasJob(atlasRequestId, progPrefix) {
-  // Pick message set + estimated time based on context
   const isVideo = progPrefix === 'vid';
   const messages = isVideo ? VIDEO_LOADING_MESSAGES : IMAGE_LOADING_MESSAGES;
-  const ESTIMATED_TOTAL_SEC = isVideo ? 480 : 90; // video: 8min, image: 1.5min
-  const MAX_CONSECUTIVE_ERRORS = 5; // bail out if status endpoint keeps failing
+  const ESTIMATED_TOTAL_SEC = isVideo ? 480 : 90;
+  const MAX_CONSECUTIVE_ERRORS = 5;
 
   return new Promise((resolve, reject) => {
     let polls = 0;
@@ -2016,7 +1914,6 @@ async function pollAtlasJob(atlasRequestId, progPrefix) {
     let consecutiveErrors = 0;
     let cancelled = false;
 
-    // Expose cancel — user can call window.cancelCurrentJob() from a UI button
     window.cancelCurrentJob = () => {
       cancelled = true;
       clearInterval(iv);
@@ -2028,18 +1925,12 @@ async function pollAtlasJob(atlasRequestId, progPrefix) {
       try {
         const res = await fetch(`${API}/api/atlas/status?id=${encodeURIComponent(atlasRequestId)}`);
         const data = await res.json();
-        consecutiveErrors = 0; // reset on any successful response
+        consecutiveErrors = 0;
 
         if (data.status === 'done') {
           clearInterval(iv);
-          console.log('[pollAtlas] DONE, data:', data);
-          if (data.output) {
-            console.log('[pollAtlas] resolving with:', data.output);
-            resolve(data.output);
-          } else {
-            console.error('[pollAtlas] no output URL in done response');
-            reject(new Error('No output URL returned'));
-          }
+          if (data.output) resolve(data.output);
+          else reject(new Error('No output URL returned'));
           return;
         }
         if (data.status === 'failed') {
@@ -2047,16 +1938,13 @@ async function pollAtlasJob(atlasRequestId, progPrefix) {
           return;
         }
 
-        // Update progress UI
         const elapsedSec = Math.floor((Date.now() - startTime) / 1000);
         const elapsedMin = Math.floor(elapsedSec / 60);
         const elapsedRem = elapsedSec % 60;
         const elapsedStr = elapsedMin > 0 ? `${elapsedMin}m ${elapsedRem}s` : `${elapsedRem}s`;
 
-        // Estimated progress (cap at 95% until actually done)
         const pct = Math.min(95, Math.floor((elapsedSec / ESTIMATED_TOTAL_SEC) * 100));
 
-        // Rotate message every ~6-12 seconds (faster for image)
         const rotateInterval = isVideo ? 12 : 6;
         if (elapsedSec - lastMsgChange >= rotateInterval) {
           msgIndex = (msgIndex + 1) % messages.length;
@@ -2064,7 +1952,6 @@ async function pollAtlasJob(atlasRequestId, progPrefix) {
         }
         const currentMsg = messages[msgIndex];
 
-        // Build display: emoji message + percent + elapsed time
         let displayMsg = `${currentMsg}  ·  ${pct}%  ·  ${elapsedStr}`;
         const longThreshold = isVideo ? 10 : 3;
         if (elapsedMin >= longThreshold) {
@@ -2080,7 +1967,6 @@ async function pollAtlasJob(atlasRequestId, progPrefix) {
           clearInterval(iv);
           reject(new Error('Connection lost — please check your network and try again.'));
         }
-        // else: tolerate transient errors and keep polling
       }
     }, 4000);
   });
@@ -2091,7 +1977,6 @@ async function pollJob(modelPath, requestId, progPrefix, msg, statusUrl) {
     let polls = 0;
     const iv = setInterval(async () => {
       try {
-        // Prefer status_url (passed from submit response), fallback to constructing
         const url = statusUrl
           ? `${API}/api/status/?status_url=${encodeURIComponent(statusUrl)}&model=${encodeURIComponent(modelPath)}`
           : `${API}/api/status/${modelPath}/${requestId}`;
@@ -2116,10 +2001,7 @@ async function pollJob(modelPath, requestId, progPrefix, msg, statusUrl) {
 }
 
 // ═══════════════════════════════════════════════════════════
-// CHARACTERS / HISTORY
-// ═══════════════════════════════════════════════════════════
-// ═══════════════════════════════════════════════════════════
-// PROMPT PRESETS — quick scenarios users can tap to fill the prompt
+// PROMPT PRESETS
 // ═══════════════════════════════════════════════════════════
 const CHARACTER_PRESETS = [
   { emoji: '✨', label: 'K-pop idol look',
@@ -2175,7 +2057,6 @@ function renderPromptPresets(targetId, textareaId, presets) {
       <span>${p.emoji}</span><span>${escapeHtml(p.label)}</span>
     </button>
   `).join('');
-  // Stash the data on the element for the click handler
   wrap._presets = presets;
 }
 
@@ -2185,18 +2066,12 @@ function applyPreset(textareaId, index, presetsContainerId) {
   if (!wrap || !ta || !wrap._presets) return;
   ta.value = wrap._presets[index].prompt;
   ta.focus();
-  // Scroll into view so the user sees the filled text
   ta.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 async function loadCharacters() {
-  // Without auth, the user has no characters of their own — RLS will return 0 rows.
-  // Skip the network call to keep things snappy and avoid noisy errors.
   if (!S.user) { S.characters = []; return; }
   try {
-    // Explicit user_id filter — without this, admins would see other users' characters
-    // due to the "admins can select all" RLS policy. The studio shows only the current
-    // user's profiles, so we filter at the query level.
     const { data, error } = await supa
       .from('characters')
       .select('*')
@@ -2211,7 +2086,6 @@ function renderProfileGrid(prefix) {
   const grid = document.getElementById(`${prefix}-profile-grid`);
   const selectedId = prefix === 'img' ? S.imgSelectedProfileId : S.vidSelectedProfileId;
 
-  // Always-present "upload new" tile at the start
   const uploadTile = `
     <div class="profile-card profile-upload-tile" onclick="document.getElementById('${prefix}-extra-upload').click()">
       <input type="file" id="${prefix}-extra-upload" accept="image/*" style="display:none" onchange="handleExtraImageUpload(event,'${prefix}')">
@@ -2229,7 +2103,6 @@ function renderProfileGrid(prefix) {
     </div>
   `).join('');
 
-  // Empty-state hint when the user has no characters yet
   let emptyHint = '';
   if (S.characters.length === 0) {
     emptyHint = `
@@ -2253,36 +2126,23 @@ function selectRatio(btnEl) {
   S.imgAspectRatio = btnEl.dataset.ratio || '';
 }
 
-// Client-side: extend a 1:1 image into a wider/taller canvas by stretching edge pixels.
-// This gives the model an input that already has the target aspect ratio,
-// so its output also matches that ratio.
 async function extendImageToAspect(imageUrl, aspectRatio) {
-  if (!aspectRatio || aspectRatio === '1:1') return imageUrl; // no-op
+  if (!aspectRatio || aspectRatio === '1:1') return imageUrl;
 
-  // If the source image is NOT on fal.media (which we trust + has CORS),
-  // pre-rehost it through our worker so Canvas can read pixel data.
-  // External hosts (oss.filenest.top, dashscope.aliyuncs.com etc.) often block CORS.
   let safeUrl = imageUrl;
   if (!/(?:fal\.media|fal\.ai)/i.test(imageUrl)) {
     try {
-      console.log('[extend] non-fal source, rehosting:', imageUrl);
       const r = await fetch(`${API}/api/rehost-image`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: imageUrl })
       });
       const d = await r.json();
-      if (d.ok && d.url) {
-        safeUrl = d.url;
-        console.log('[extend] rehosted to:', safeUrl);
-      } else {
-        console.warn('[extend] rehost failed, will try direct:', d);
-      }
+      if (d.ok && d.url) safeUrl = d.url;
     } catch (e) {
       console.warn('[extend] rehost call failed:', e.message);
     }
   }
 
-  // Now load the (potentially rehosted) image
   const img = await new Promise((resolve, reject) => {
     const im = new Image();
     im.crossOrigin = 'anonymous';
@@ -2291,66 +2151,44 @@ async function extendImageToAspect(imageUrl, aspectRatio) {
     im.src = safeUrl;
   });
 
-  // Target dimensions
   const targets = { '9:16': { w: 1024, h: 1820 }, '16:9': { w: 1820, h: 1024 } };
   const tgt = targets[aspectRatio];
   if (!tgt) return imageUrl;
 
-  // Create canvas
   const canvas = document.createElement('canvas');
   canvas.width = tgt.w;
   canvas.height = tgt.h;
   const ctx = canvas.getContext('2d');
 
-  // Compute placement: scale source to fit one dimension fully, center on the other
-  // For 9:16: image height fills the canvas height, width is centered
-  // For 16:9: image width fills the canvas width, height is centered
   const srcAspect = img.width / img.height;
   let drawW, drawH, drawX, drawY;
   if (aspectRatio === '9:16') {
-    // Source 1:1 → fit by width, then we have empty top/bottom (rare with 1:1 source) or fit by height
     drawH = tgt.h;
     drawW = drawH * srcAspect;
     drawX = (tgt.w - drawW) / 2;
     drawY = 0;
   } else {
-    // 16:9 — fit by width
     drawW = tgt.w;
     drawH = drawW / srcAspect;
     drawX = 0;
     drawY = (tgt.h - drawH) / 2;
   }
 
-  // Step 1: stretch edge pixels to fill the empty space (pre-fill)
-  // We do this by sampling a thin strip from each edge and stretching it.
-  // This creates a smooth gradient-like fill that resembles the original background.
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
 
   if (aspectRatio === '9:16') {
-    // Stretch left edge of image to fill left side
-    const stripW = 4; // thin strip from source edge
-    // Left fill
-    ctx.drawImage(img, 0, 0, stripW, img.height,
-                  0, drawY, drawX, drawH);
-    // Right fill
-    ctx.drawImage(img, img.width - stripW, 0, stripW, img.height,
-                  drawX + drawW, drawY, tgt.w - (drawX + drawW), drawH);
+    const stripW = 4;
+    ctx.drawImage(img, 0, 0, stripW, img.height, 0, drawY, drawX, drawH);
+    ctx.drawImage(img, img.width - stripW, 0, stripW, img.height, drawX + drawW, drawY, tgt.w - (drawX + drawW), drawH);
   } else {
-    // 16:9 — stretch top/bottom edges
     const stripH = 4;
-    // Top fill
-    ctx.drawImage(img, 0, 0, img.width, stripH,
-                  drawX, 0, drawW, drawY);
-    // Bottom fill
-    ctx.drawImage(img, 0, img.height - stripH, img.width, stripH,
-                  drawX, drawY + drawH, drawW, tgt.h - (drawY + drawH));
+    ctx.drawImage(img, 0, 0, img.width, stripH, drawX, 0, drawW, drawY);
+    ctx.drawImage(img, 0, img.height - stripH, img.width, stripH, drawX, drawY + drawH, drawW, tgt.h - (drawY + drawH));
   }
 
-  // Step 2: draw the original image on top in its centered position
   ctx.drawImage(img, drawX, drawY, drawW, drawH);
 
-  // Convert to Blob and upload to our storage
   const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png', 0.92));
   const fd = new FormData();
   fd.append('file', blob, `profile_${aspectRatio.replace(':', 'x')}.png`);
@@ -2371,13 +2209,11 @@ async function handleExtraImageUpload(event, prefix) {
 
   toast('Uploading image...', 'info');
   try {
-    // Step 1: upload to fal storage so worker can read it
     const fd = new FormData(); fd.append('file', file);
     const uploadRes = await fetch(`${API}/api/upload`, { method: 'POST', body: fd });
     const uploadData = await uploadRes.json();
     if (!uploadData.ok) throw new Error(uploadData.error || 'upload failed');
 
-    // Step 2: save as a lightweight character record (image only, no persona)
     const tempName = `Upload ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
     const { data: saved, error } = await supa.from('characters').insert({
       user_id: S.user.id,
@@ -2391,7 +2227,6 @@ async function handleExtraImageUpload(event, prefix) {
     }).select().single();
     if (error) throw new Error('DB save failed: ' + error.message);
 
-    // Step 3: refresh + auto-select this new character
     await loadCharacters();
     selectProfile(prefix, saved.id);
     toast('Image added ✓');
@@ -2399,7 +2234,6 @@ async function handleExtraImageUpload(event, prefix) {
     console.error('[ExtraUpload]', e);
     toastError(e, 'Upload failed');
   }
-  // Reset input so same file can be re-uploaded
   event.target.value = '';
 }
 
@@ -2424,8 +2258,6 @@ async function loadHistory() {
     return;
   }
 
-  // Fetch all images & videos so we can group them by character.
-  // Explicit user_id filter to prevent admins from seeing other users' content.
   let allImages = [], allVideos = [];
   try {
     const r1 = await supa.from('images').select('*').eq('user_id', S.user.id).order('created_at', { ascending: false });
@@ -2563,8 +2395,6 @@ async function loadHistory() {
 
 // ═══════════════════════════════════════════════════════════
 // GALLERY / SHOWCASE
-// Loads curated examples from the 'showcase' Supabase table.
-// Videos play on hover (no autoplay, no sound).
 // ═══════════════════════════════════════════════════════════
 async function loadGallery(targetId, filterType) {
   const el = document.getElementById(targetId);
@@ -2596,7 +2426,6 @@ async function loadGallery(targetId, filterType) {
       : `openModal('<img src=\'${it.url}\'>')`;
 
     if (it.type === 'video') {
-      // Hover-to-play: muted/loop/playsinline; play on mouseenter, pause+reset on mouseleave
       const poster = it.thumbnail_url ? ` poster="${it.thumbnail_url}"` : '';
       return `
         <div class="gallery-item" onclick="${onClickModal}">
@@ -2610,7 +2439,6 @@ async function loadGallery(targetId, filterType) {
         </div>
       `;
     }
-    // For 'character' type: show clean image without badge or caption (use thumbnail if available)
     if (it.type === 'character') {
       const displayUrl = it.thumbnail_url || it.url;
       return `
@@ -2619,7 +2447,6 @@ async function loadGallery(targetId, filterType) {
         </div>
       `;
     }
-    // Default: image with badge + caption (use thumbnail if available, original on click)
     const displayUrl = it.thumbnail_url || it.url;
     return `
       <div class="gallery-item" onclick="${onClickModal}">
@@ -2631,18 +2458,12 @@ async function loadGallery(targetId, filterType) {
   }).join('');
 }
 
-// When a gallery image/video fails to load (404, hotlink blocked, etc.),
-// hide the card immediately AND tell the server to deactivate it so future visitors
-// don't see the broken slot. Best effort — admin can permanently fix later.
 async function handleBrokenGalleryItem(el, showcaseId) {
   try {
     el.parentElement.style.display = 'none';
     console.warn('[gallery] hiding broken card:', showcaseId);
-    // Only admins/owners can update; for everyone else, this fails silently and just hides locally.
     await supa.from('showcase').update({ is_active: false }).eq('id', showcaseId);
-  } catch (e) {
-    // RLS will block non-admins — that's fine, card is already hidden visually
-  }
+  } catch (e) {}
 }
 
 function escapeHtml(s) {
@@ -2659,10 +2480,8 @@ function toggleCharGroup(id) {
 async function deleteCharacter(id, name) {
   if (!confirm(`Delete "${name}" and ALL its images & videos?\n\nThis cannot be undone.`)) return;
   try {
-    // Delete dependent assets first
     await supa.from('images').delete().eq('character_id', id);
     await supa.from('videos').delete().eq('character_id', id);
-    // Then character
     const { error } = await supa.from('characters').delete().eq('id', id);
     if (error) throw error;
     toast('Character deleted ✓');
@@ -2688,17 +2507,12 @@ async function deleteAsset(type, id) {
   }
 }
 
-// Cancel a pending generation job from History.
-// Marks the row as failed (stops the local poller from charging credits)
-// and stops the active in-page poller if this is the job currently running.
 async function cancelPendingJob(type, id) {
   if (!confirm(`Cancel this pending ${type}? The generation will stop and you won't be charged.`)) return;
   try {
     const table = type === 'image' ? 'images' : 'videos';
-    // Mark as failed so resumePendingJobs won't pick it up + UI updates
     const { error } = await supa.from(table).update({ status: 'failed' }).eq('id', id);
     if (error) throw error;
-    // If this is the currently-running job, stop the active poller
     if (typeof window.cancelCurrentJob === 'function') {
       try { window.cancelCurrentJob(); } catch {}
     }
@@ -2711,12 +2525,7 @@ async function cancelPendingJob(type, id) {
 }
 
 // ═══════════════════════════════════════════════════════════
-// DOWNLOADS
-// ═══════════════════════════════════════════════════════════
-// ═══════════════════════════════════════════════════════════
-// SHARE TO COMMUNITY (gallery submission)
-// User clicks → status becomes 'pending' → admin reviews → if approved,
-// item is added to showcase table.
+// SHARE TO COMMUNITY
 // ═══════════════════════════════════════════════════════════
 function refreshShareButton(prefix) {
   const btn = document.getElementById(`${prefix}-share-btn`);
@@ -2807,12 +2616,10 @@ async function shareToGallery(type) {
 // SNS CAPTION GENERATION
 // ═══════════════════════════════════════════════════════════
 async function generateCaption(contentType) {
-  // Determine which character was used
   const profileId = contentType === 'image' ? S.imgSelectedProfileId : S.vidSelectedProfileId;
   const profile = S.characters.find(c => c.id === profileId);
   if (!profile) { toast('Character not found', 'err'); return; }
 
-  // Asset URL
   const assetUrl = contentType === 'image' ? S.lastImage : S.lastVideo;
   const resultId = contentType === 'image' ? 'img-caption-result' : 'vid-caption-result';
   const btnId = contentType === 'image' ? 'img-caption-btn' : 'vid-caption-btn';
@@ -2820,7 +2627,6 @@ async function generateCaption(contentType) {
   const resultEl = document.getElementById(resultId);
   const btn = document.getElementById(btnId);
 
-  // Render platform picker first
   resultEl.innerHTML = `
     <div class="caption-box">
       <div class="caption-box-title">Choose Platform</div>
@@ -2843,7 +2649,6 @@ async function pickCaptionPlatform(contentType, platform) {
   const resultId = contentType === 'image' ? 'img-caption-result' : 'vid-caption-result';
   const outEl = document.getElementById(`${resultId}-output`);
 
-  // Highlight selected
   document.querySelectorAll(`#${resultId} .caption-platform-btn`).forEach(b => b.classList.remove('selected'));
   document.querySelector(`#${resultId} [data-platform="${platform}"]`)?.classList.add('selected');
 
@@ -2858,7 +2663,6 @@ async function pickCaptionPlatform(contentType, platform) {
         character_niche: profile.niche,
         content_type: contentType,
         platform,
-        // Pass image URL for vision context (only for image type)
         image_url: contentType === 'image' ? assetUrl : null,
       })
     });
