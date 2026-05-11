@@ -400,26 +400,33 @@ a{color:inherit;text-decoration:none}
   // ═══════════════════════════════════════════════════════════
   // Polar.sh checkout integration
   // ═══════════════════════════════════════════════════════════
-  // Each plan/pack maps to a Polar product ID.
-  // The checkout URL takes the form:
-  //   https://polar.sh/checkout/<product_id>?customer_email=<email>
+  // Each plan/pack uses a pre-configured Polar Checkout Link.
+  // Created via Polar Dashboard → Products → Checkout Links → New Link.
+  //
+  // The base URL takes the form:
+  //   https://buy.polar.sh/polar_cl_<id>?customer_email=<email>
   //
   // We pass customer_email so the Polar webhook can match the payment
   // back to the right Supabase user. This is REQUIRED — without an email
   // match, the webhook can't credit the right account.
+  //
+  // The Success URL is configured ON THE CHECKOUT LINK ITSELF in the
+  // Polar dashboard (not via query param), so we don't pass success_url here.
 
-  // Polar product IDs (production)
-  const POLAR_PRODUCTS = {
+  // Polar Checkout Link URLs (production)
+  // Created via Polar Dashboard → Products → Checkout Links → New Link.
+  // Each link is pre-configured with success_url and allows discount codes.
+  const POLAR_CHECKOUT_URLS = {
     // Subscriptions (recurring monthly)
-    starter: '88cccde0-685c-46f4-9d14-f22770049dba',
-    creator: '9ef17890-6863-4090-96e8-1a7d4b92b455',
-    pro:     'd0be28b6-5321-4b2b-94da-3b8f9d9d3a83',
+    starter: 'https://buy.polar.sh/polar_cl_oKRdU3hdbjceutvZ1PDm0cOyZPW8Y0MFKyGqH0ulb2p',
+    creator: 'https://buy.polar.sh/polar_cl_WP6oQc8nJuvHJNt0AYJpRJvHOSpSYahIgbXlO2DVJoO',
+    pro:     'https://buy.polar.sh/polar_cl_9vs2dn2dYXL9D6Xeqd0cOGEhQZsQcC9YOBU5w2DYAIk',
 
     // One-time credit packs
-    mini:    'e43ccb75-3b07-413f-bb67-f055036a7366',
-    small:   'f6dcb396-7c09-4ad1-9c91-8d9836685f5e',
-    medium:  'f78cb0a7-ffbe-4cbc-94c1-824d3268bb46',
-    large:   '84c0aa7b-c736-4b3f-a4be-7f46a8c7c2e0',
+    mini:    'https://buy.polar.sh/polar_cl_AgbJr01VVcXbdRACBAmT5FQtpu8E726Ivi1pu2meuZP',
+    small:   'https://buy.polar.sh/polar_cl_Yl3BoHRAz9l4KVby8qrML4FFEc2OHZ4LkbGwG3W8PGK',
+    medium:  'https://buy.polar.sh/polar_cl_GM8MczikRpKZcf73qDUQXQahMllvVQYJEYQq83T1UMW',
+    large:   'https://buy.polar.sh/polar_cl_wBxdzq7zuvRiTf4v9U9Fu4jQDHWKXZWsROAGj0oHjKH',
   };
 
   const supa = window.supabase.createClient(window.CONFIG.SUPABASE_URL, window.CONFIG.SUPABASE_KEY);
@@ -453,16 +460,17 @@ a{color:inherit;text-decoration:none}
   }
 
   async function startCheckout(planKey, btnEl) {
-    const productId = POLAR_PRODUCTS[planKey];
-    if (!productId) {
+    const baseUrl = POLAR_CHECKOUT_URLS[planKey];
+    if (!baseUrl) {
       alert('Plan not found.');
       return;
     }
 
     // Show loading state on the button
+    let origText = '';
     if (btnEl) {
       btnEl.disabled = true;
-      const origText = btnEl.textContent;
+      origText = btnEl.textContent;
       btnEl.textContent = 'Loading...';
       // Restore button if we end up not redirecting (e.g. sign-in modal)
       setTimeout(() => {
@@ -480,23 +488,27 @@ a{color:inherit;text-decoration:none}
     if (!user || !user.email) {
       // No user → open sign-in modal. Pricing.html will reload after OAuth
       // with ?resume=<plan> in the URL, which we'll detect on load.
+      if (btnEl) {
+        btnEl.disabled = false;
+        btnEl.textContent = origText;
+      }
       openSignInModal(planKey);
       return;
     }
 
-    // Build the Polar checkout URL
+    // Build the Polar checkout URL with prefilled customer info.
+    // Polar Checkout Links accept these query params:
+    //   customer_email  → prefills email field (so webhook can match user)
+    //   customer_name   → prefills name field
+    //   metadata[key]   → attached to the checkout session (visible in webhook)
     const params = new URLSearchParams();
     params.set('customer_email', user.email);
-    // Include name if we have it
     const name = user.user_metadata?.full_name || user.user_metadata?.name;
     if (name) params.set('customer_name', name);
-    // Pass user_id as metadata — Polar will include this in webhook payload
-    // (useful backup in case email matching fails for any reason)
+    // Backup mapping: Polar webhook will receive this in metadata.user_id
     params.set('metadata[user_id]', user.id);
-    // Redirect back to the studio after successful checkout
-    params.set('success_url', window.location.origin + '/?payment=success');
 
-    const checkoutUrl = `https://polar.sh/checkout/${productId}?${params.toString()}`;
+    const checkoutUrl = `${baseUrl}?${params.toString()}`;
     console.log('[checkout] redirecting to:', checkoutUrl);
     window.location.href = checkoutUrl;
   }
