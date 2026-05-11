@@ -43,6 +43,9 @@ a:hover{text-decoration:underline}
 .article li::marker{color:var(--v)}
 .article b,.article strong{color:var(--white);font-weight:600}
 .article .placeholder{background:rgba(244,114,182,.1);border:1px dashed rgba(244,114,182,.4);padding:.1em .4em;border-radius:4px;color:var(--p);font-family:'JetBrains Mono','Courier New',monospace;font-size:.86em}
+.callout{background:rgba(167,139,250,.06);border-left:3px solid var(--v);padding:1rem 1.2rem;border-radius:0 8px 8px 0;margin:1.2rem 0}
+.callout p{margin-bottom:.5rem;color:var(--white)}
+.callout p:last-child{margin-bottom:0}
 
 .footer{padding:3rem 2rem 2.5rem;border-top:1px solid var(--border);text-align:center;color:var(--muted);font-size:.78rem;max-width:1280px;margin:4rem auto 0}
 .footer-row{display:flex;justify-content:center;gap:1.5rem;margin-bottom:.7rem;flex-wrap:wrap}
@@ -64,7 +67,7 @@ a:hover{text-decoration:underline}
 <section class="hero">
   <div class="hero-pill">LEGAL</div>
   <h1>Terms of Service</h1>
-  <p class="last-updated">Last updated: 2026-05-08</p>
+  <p class="last-updated">Last updated: 2026-05-11</p>
 </section>
 
 <article class="article">
@@ -78,7 +81,7 @@ a:hover{text-decoration:underline}
   <li><b>Business name:</b> Bizglobal</li>
   <li><b>Representative:</b> Jihun Jung</li>
   <li><b>Business registration number:</b> 7604001387</li>
-  <li><b>Address:</b> Gyeongi-do, South Korea</li>
+  <li><b>Address:</b> Gyeonggi-do, South Korea</li>
   <li><b>Contact email:</b> support@charamaker.app</li>
 </ul>
 
@@ -112,30 +115,94 @@ a:hover{text-decoration:underline}
 <p>Generations consume credits. Each action has a fixed credit cost (described on our <a href="/pricing">Pricing page</a>). Credits are deducted only upon successful generation. Failed generations do not deduct credits.</p>
 
 <h3>5.2 Free credits</h3>
-<p>New accounts receive 500 starter credits one time. Free credits do not roll over and have no monetary value.</p>
+<p>New accounts receive 200 starter credits one time. Free credits do not roll over and have no monetary value.</p>
 
 <h3>5.3 Paid plans</h3>
 <p>Subscription plans (Starter / Creator / Pro) include monthly credit allocations. Subscription credits do not roll over to the next billing cycle. Plans renew automatically until cancelled.</p>
 
-<h3>5.4 Bonus credits</h3>
+<h3>5.4 Credit packs</h3>
+<p>One-time credit packs (Mini / Small / Medium / Large) add credits to your account that do not expire. Pack credits stack with subscription credits.</p>
+
+<h3>5.5 Bonus credits</h3>
 <p>You may earn bonus credits when content you submit is approved for the public gallery. Bonus credits have no monetary value and cannot be exchanged for cash.</p>
 
-<h3>5.5 Payment processing</h3>
-<p>Payments are processed by third-party payment processors. By making a purchase, you also agree to the terms of the relevant payment processor.</p>
+<h3>5.6 Payment processing</h3>
+<p>Payments are processed by third-party payment processors (currently Polar.sh). By making a purchase, you also agree to the terms of the relevant payment processor.</p>
 
-<h3>5.6 Refunds</h3>
-<p>We offer refunds within 7 days of purchase if you have used less than 10% of your monthly credits and have not violated these Terms. Refund requests must be sent to our contact email.</p>
+<h2>6. Refund Policy</h2>
 
-<h2>6. User Content and Ownership</h2>
+<p>We want you to be happy with CharaMaker. Our refund policy is designed to be fair to both users and the platform.</p>
 
-<h3>6.1 Your input</h3>
+<h3>6.1 Eligibility for refunds</h3>
+<p>You may request a refund if <b>all</b> of the following conditions are met:</p>
+<ul>
+  <li>The refund request is submitted within <b>7 days</b> of the original purchase.</li>
+  <li>You have used <b>less than 10%</b> of the credits received from that specific purchase.</li>
+  <li>The purchase was not made using a promotional discount that explicitly excludes refunds.</li>
+  <li>Your account has not violated these Terms (Section 7 — Acceptable Use).</li>
+</ul>
+
+<div class="callout">
+  <p><b>Refunds cannot be processed</b> once 10% or more of the purchased credits have been consumed. This applies to both one-time credit packs and subscription credits.</p>
+</div>
+
+<h3>6.2 How to request a refund</h3>
+<p>Email us at <a href="mailto:support@charamaker.app">support@charamaker.app</a> with:</p>
+<ul>
+  <li>Your account email</li>
+  <li>The order ID (visible in your purchase receipt from Polar.sh)</li>
+  <li>The reason for the refund request</li>
+</ul>
+<p>We aim to respond within <b>2 business days</b>.</p>
+
+<h3>6.3 Subscription refunds</h3>
+<ul>
+  <li>You can cancel your subscription at any time from your account settings to prevent the next billing cycle. Cancellation takes effect at the end of your current billing period.</li>
+  <li>Refunds for the <b>current billing period</b> follow the same 7-day / 10%-usage rule outlined in Section 6.1.</li>
+  <li>Unused subscription credits at the end of a billing cycle do not roll over and are not refundable in cash.</li>
+</ul>
+
+<h3>6.4 Automatic credit adjustment</h3>
+<p>When a refund is issued, the credits granted from that purchase are <b>automatically deducted from your account</b>. Specifically:</p>
+<ul>
+  <li>If your balance is greater than the refunded credits, the full credit amount is deducted.</li>
+  <li>If your balance is less than the refunded credits, your balance is reduced to <b>zero</b>. We do not charge you separately for credits already consumed, but we also do not restore them if a refund occurs after use.</li>
+  <li>For partial refunds, credits are deducted proportionally to the refunded amount.</li>
+</ul>
+
+<h3>6.5 Disputed charges and chargebacks</h3>
+
+<div class="callout">
+  <p><b>Please contact us first.</b> We strongly encourage you to contact our support team at <a href="mailto:support@charamaker.app">support@charamaker.app</a> before disputing a charge with your card issuer. In most cases, we can resolve the issue directly within a business day.</p>
+</div>
+
+<p>Filing a chargeback without first attempting to resolve the issue with us may result in:</p>
+<ul>
+  <li>Immediate account suspension</li>
+  <li>Forfeiture of any remaining credits in your account</li>
+  <li>Permanent ban from creating new accounts on the Service</li>
+</ul>
+
+<h3>6.6 Exceptions</h3>
+<p>We may issue refunds outside these standard rules at our sole discretion in exceptional cases, including but not limited to:</p>
+<ul>
+  <li>Verified technical failures on our end that prevented service delivery</li>
+  <li>Accidental duplicate purchases made within 24 hours</li>
+  <li>Demonstrably fraudulent charges on your account</li>
+</ul>
+
+<p>All refund decisions are final and at the discretion of CharaMaker. This policy does not affect your statutory consumer rights under applicable law, including but not limited to consumer protection laws in your jurisdiction.</p>
+
+<h2>7. User Content and Ownership</h2>
+
+<h3>7.1 Your input</h3>
 <p>You retain all rights to text, prompts, images, and reference videos that you upload or submit ("Input"). You grant us a limited license to use your Input solely for the purpose of providing the Service.</p>
 
-<h3>6.2 Generated output</h3>
+<h3>7.2 Generated output</h3>
 <p>To the maximum extent allowed by applicable law, you own the AI-generated images, videos, and captions ("Output") produced through your use of the Service. You may use Output for personal or commercial purposes, including social media, marketing, and resale.</p>
 <p>Note: AI-generated content may not be copyrightable in some jurisdictions. We make no warranties regarding copyrightability.</p>
 
-<h3>6.3 You are responsible for your content</h3>
+<h3>7.3 You are responsible for your content</h3>
 <p>You represent that you have all rights necessary to upload your Input. You agree not to upload content that:</p>
 <ul>
   <li>Infringes any third party's intellectual property, privacy, or other rights;</li>
@@ -145,7 +212,7 @@ a:hover{text-decoration:underline}
   <li>Is intended to deceive or impersonate (e.g., deepfakes of real public figures).</li>
 </ul>
 
-<h2>7. Acceptable Use</h2>
+<h2>8. Acceptable Use</h2>
 <p>You agree not to:</p>
 <ul>
   <li>Use the Service for any illegal purpose or in violation of any local, national, or international law.</li>
@@ -155,35 +222,35 @@ a:hover{text-decoration:underline}
   <li>Use the Service to compete with or replicate the Service.</li>
   <li>Resell credits or accounts to third parties.</li>
 </ul>
-<p>We reserve the right to suspend or terminate accounts that violate these rules, without refund.</p>
+<p>We reserve the right to suspend or terminate accounts that violate these rules, <b>without refund</b>.</p>
 
-<h2>8. Public Gallery</h2>
+<h2>9. Public Gallery</h2>
 <p>If you choose to share your work to the public gallery, you grant us a worldwide, non-exclusive license to display, reproduce, and promote your submission within the Service and on our marketing materials. You may withdraw a submission at any time.</p>
 <p>Submissions are subject to admin review and may be rejected for any reason.</p>
 
-<h2>9. Intellectual Property</h2>
+<h2>10. Intellectual Property</h2>
 <p>The Service itself, including the website, brand, logos, and underlying technology, is owned by us and protected by intellectual property laws. You may not copy, modify, or distribute any part of the Service without permission.</p>
 
-<h2>10. Disclaimers</h2>
+<h2>11. Disclaimers</h2>
 <p>The Service is provided "as is" and "as available", without warranties of any kind, express or implied. We do not warrant that the Service will be uninterrupted, error-free, secure, or free of viruses.</p>
 <p>AI-generated content may be inaccurate, biased, or otherwise inappropriate. You are responsible for reviewing all generated content before using or publishing it.</p>
 
-<h2>11. Limitation of Liability</h2>
+<h2>12. Limitation of Liability</h2>
 <p>To the fullest extent permitted by law, the Company shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including but not limited to loss of profits, data, or use, arising out of or in connection with the Service.</p>
 <p>Our aggregate liability for any claim shall not exceed the amount you paid us in the 12 months preceding the claim.</p>
 
-<h2>12. Termination</h2>
+<h2>13. Termination</h2>
 <p>You may stop using the Service at any time. We may suspend or terminate your access if you violate these Terms or engage in fraud, abuse, or harmful conduct.</p>
 <p>Upon termination, your right to use the Service ends. Sections that by their nature should survive termination (ownership, disclaimers, limitations of liability) will survive.</p>
 
-<h2>13. Changes to These Terms</h2>
+<h2>14. Changes to These Terms</h2>
 <p>We may update these Terms from time to time. We will post the updated Terms here and update the "Last updated" date. Material changes will be communicated via email or in-product notice. Continued use after changes constitutes acceptance.</p>
 
-<h2>14. Governing Law and Disputes</h2>
+<h2>15. Governing Law and Disputes</h2>
 <p>These Terms are governed by the laws of the Republic of Korea, without regard to conflict-of-law principles. Any disputes shall be resolved in the courts of Seoul, South Korea or appropriate jurisdiction.</p>
 <p>If you are a consumer in another country (e.g., the EU), you may have additional rights under your local consumer protection laws that are not waived by these Terms.</p>
 
-<h2>15. Contact</h2>
+<h2>16. Contact</h2>
 <p>For any questions or concerns, please reach out to:</p>
 <ul>
   <li><b>Email:</b> support@charamaker.app</li>
