@@ -284,6 +284,16 @@ input:focus,textarea:focus,select:focus{border-color:rgba(167,139,250,.5)}
 .sb-credits .cb-icon{font-size:1.2rem}
 .sb-credits .cb-amt{font-weight:700;font-size:.9rem;color:var(--white);font-family:'Syne',sans-serif;letter-spacing:-.01em}
 .sb-credits .cb-plan{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.sb-credits .cb-buy{
+  width:28px;height:28px;border-radius:8px;
+  background:var(--grad);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.1rem;font-weight:700;
+  text-decoration:none;
+  transition:transform .15s;
+  flex-shrink:0;
+}
+.sb-credits .cb-buy:hover{transform:translateY(-1px) scale(1.05)}
 
 /* Out-of-credits modal */
 .credits-modal{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:9999;backdrop-filter:blur(8px)}
@@ -1034,10 +1044,20 @@ function renderCreditsBadge() {
   if (!S.user) { el.style.display = 'none'; return; }
   el.style.display = 'flex';
   if (S.credits === -1) {
-    el.innerHTML = `<span class="cb-icon">∞</span><div><div class="cb-amt">Unlimited</div><div class="cb-plan">Admin</div></div>`;
+    el.innerHTML = `
+      <span class="cb-icon">∞</span>
+      <div style="flex:1"><div class="cb-amt">Unlimited</div><div class="cb-plan">Admin</div></div>
+    `;
   } else {
     const planLabel = (S.plan || 'free').charAt(0).toUpperCase() + (S.plan || 'free').slice(1);
-    el.innerHTML = `<span class="cb-icon">⚡</span><div><div class="cb-amt">${(S.credits ?? 0).toLocaleString()}</div><div class="cb-plan">${planLabel} plan</div></div>`;
+    el.innerHTML = `
+      <span class="cb-icon">⚡</span>
+      <div style="flex:1">
+        <div class="cb-amt">${(S.credits ?? 0).toLocaleString()}</div>
+        <div class="cb-plan">${planLabel} plan</div>
+      </div>
+      <a href="/pricing" class="cb-buy" title="Buy more credits">+</a>
+    `;
   }
 }
 
