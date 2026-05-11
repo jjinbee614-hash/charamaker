@@ -120,7 +120,7 @@ h1 { font-family:'Syne',sans-serif; font-size:2rem; font-weight:800; letter-spac
 <div id="toast" class="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config.js"></script>
+<script src="/config.js"></script>
 <script>
 // ── CONFIG ──
 if (!window.CONFIG) {
@@ -167,8 +167,6 @@ function setStatus(msg, isError) {
 }
 
 function isAdminFromSession(session) {
-  // Supabase puts the JWT's app_metadata onto the user object; we look for is_admin: true
-  // (set via raw_app_meta_data in SQL).
   return session?.user?.app_metadata?.is_admin === true;
 }
 
@@ -264,17 +262,14 @@ function setTab(tab) {
   else loadSubmissions(tab);
 }
 
-// ── CREDITS ADMIN ──
+// ── CREDITS ADMIN (이메일 포함) ──
 async function loadCreditsTab() {
   const content = document.getElementById('content');
   content.innerHTML = '<div class="loading">Loading users...</div>';
 
   try {
-    // Pull all user_credits rows. Admin RLS allows full access.
-    const { data: credits, error } = await supa
-      .from('user_credits')
-      .select('user_id, credits, plan_name, plan_expires_at, updated_at')
-      .order('updated_at', { ascending: false });
+    // RPC로 admin 전용 데이터 가져오기 (email 포함)
+    const { data: credits, error } = await supa.rpc('admin_list_users');
     if (error) throw error;
 
     // Pull recent transactions for context
@@ -312,13 +307,16 @@ function renderCreditRow(c, recentTxs) {
   const lastTxText = lastTx ? `Last: ${lastTx.delta > 0 ? '+' : ''}${lastTx.delta} (${lastTx.reason})` : 'No activity';
   const planLabel = (c.plan_name || 'free').toUpperCase();
   const balanceColor = c.credits === 0 ? 'var(--r)' : c.credits < 200 ? 'var(--p)' : 'var(--white)';
+  const email = c.email || '(no email)';
+  const subStatus = c.subscription_status ? ` · ${c.subscription_status}` : '';
   return `
     <div class="card" style="display:flex;align-items:center;justify-content:space-between;padding:1rem;flex-wrap:wrap;gap:1rem">
       <div style="flex:1;min-width:200px">
-        <div style="font-family:monospace;font-size:.78rem;color:var(--muted);margin-bottom:.3rem">${c.user_id}</div>
+        <div style="font-size:.92rem;font-weight:600;color:var(--white);margin-bottom:.2rem">${escapeHtml(email)}</div>
+        <div style="font-family:monospace;font-size:.7rem;color:var(--muted);margin-bottom:.3rem">${c.user_id}</div>
         <div style="display:flex;gap:.7rem;align-items:baseline">
           <span style="font-size:1.5rem;font-weight:700;color:${balanceColor};font-family:'Syne',sans-serif">${c.credits.toLocaleString()}</span>
-          <span style="font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">${planLabel}</span>
+          <span style="font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">${planLabel}${subStatus}</span>
         </div>
         <div style="font-size:.75rem;color:var(--muted);margin-top:.3rem">${lastTxText}</div>
       </div>
@@ -465,8 +463,6 @@ async function moderate(type, id, newStatus) {
       const { data: row } = await supa.from(table).select('*').eq('id', id).single();
       let url = type === 'video' ? row.video_url : row.image_url;
 
-      // Auto-rehost external URLs to our permanent host (fal.media).
-      // External hosts like oss.filenest.top expire and break gallery cards over time.
       if (url && !/(?:fal\.media|fal\.ai)/i.test(url)) {
         try {
           toast('Rehosting image to permanent storage...', 'ok');
@@ -478,7 +474,6 @@ async function moderate(type, id, newStatus) {
           const d = await r.json();
           if (d.ok && d.url) {
             url = d.url;
-            // Also update the source row so future loads use the safe URL
             const updateField = type === 'video' ? { video_url: url } : { image_url: url };
             await supa.from(table).update(updateField).eq('id', id);
             console.log('[moderate] rehosted to:', url);
@@ -509,7 +504,7 @@ async function moderate(type, id, newStatus) {
           thumbnail_url: thumbnailUrl,
           source_type: type,
           source_id: id,
-          user_id: row.user_id,   // RLS insert policy requires auth.uid() = user_id
+          user_id: row.user_id,
           is_active: true,
           display_order: 0,
         });
