@@ -1,3 +1,106 @@
+# CharaMaker robots.txt — Hybrid policy
+# Allows GPTBot and ClaudeBot (for ChatGPT/Claude recommendations)
+# Blocks other AI training crawlers (Bytespider, Amazonbot, etc.)
+# Search engines (Google, Bing) have full access.
+
+# ─── Search engines: full access ───
+User-agent: Googlebot
+Allow: /
+Disallow: /admin
+Disallow: /admin.html
+
+User-agent: Bingbot
+Allow: /
+Disallow: /admin
+Disallow: /admin.html
+
+User-agent: DuckDuckBot
+Allow: /
+Disallow: /admin
+
+# ─── Allowed AI assistants (helps users discover CharaMaker) ───
+# GPTBot — OpenAI's web crawler used to improve ChatGPT
+User-agent: GPTBot
+Allow: /
+Disallow: /admin
+
+# ChatGPT-User — fetches content when users ask ChatGPT about a URL
+User-agent: ChatGPT-User
+Allow: /
+Disallow: /admin
+
+# ClaudeBot — Anthropic's web crawler for Claude
+User-agent: ClaudeBot
+Allow: /
+Disallow: /admin
+
+# anthropic-ai — older Anthropic crawler identifier
+User-agent: anthropic-ai
+Allow: /
+Disallow: /admin
+
+# Claude-Web — for users asking Claude about specific URLs
+User-agent: Claude-Web
+Allow: /
+Disallow: /admin
+
+# ─── Blocked AI training crawlers ───
+User-agent: Google-Extended
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: PerplexityBot
+Disallow: /
+
+User-agent: Bytespider
+Disallow: /
+
+User-agent: Applebot-Extended
+Disallow: /
+
+User-agent: Amazonbot
+Disallow: /
+
+User-agent: meta-externalagent
+Disallow: /
+
+User-agent: FacebookBot
+Disallow: /
+
+User-agent: cohere-ai
+Disallow: /
+
+User-agent: Diffbot
+Disallow: /
+
+User-agent: ImagesiftBot
+Disallow: /
+
+User-agent: Omgilibot
+Disallow: /
+
+User-agent: YouBot
+Disallow: /
+
+# ─── Blocked SEO scraper bots (consume crawl budget, no value) ───
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: DataForSeoBot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /
+
+# ─── Catch-all: allow other bots, block admin ───
 User-agent: *
 Allow: /
 Disallow: /admin
