@@ -1740,6 +1740,7 @@ async function generateImage() {
   // 모델이 알아서 얼굴/몸 피부톤을 자연스럽게 조화시키게 둠
   finalPrompt = [
     'KEEP THE EXACT SAME PERSON from the input image — preserve facial features (eye shape, nose, mouth, face proportions), skin tone, AND hair (same color, same length, same style, same parting) 100% identical.',
+    'IMPORTANT: The skin tone on the neck, arms, hands, and any visible body skin MUST match the face skin tone exactly. No color difference between face and body.',
     'DO NOT redesign the face or hair. DO NOT change hair color, hair length, or hairstyle. Only change the scene, clothing, pose, and background as described below. Blend the face naturally with the body — no visible color line at the neck or jaw.',
     'Photorealistic photo of the same person from the input image — same face, same hair — in this new scene:',
     finalPrompt
