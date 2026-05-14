@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Account — CharaMaker</title>
+<meta name="description" content="Manage your CharaMaker subscription, refunds, notifications, and referrals.">
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/config.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#06060a; --s1:#0e0e14; --s2:#16161e; --s3:#1d1d27;
+  --white:#ede9ff; --muted:#5c596e; --border:rgba(255,255,255,0.08);
+  --v:#a78bfa; --p:#f472b6; --c:#22d3ee; --g:#4ade80; --r:#f87171;
+  --grad:linear-gradient(135deg,#a78bfa 0%,#f472b6 100%);
+}
+body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;min-height:100vh;line-height:1.6}
+.amb{position:fixed;border-radius:50%;filter:blur(140px);pointer-events:none;z-index:0}
+.amb1{width:600px;height:600px;background:rgba(167,139,250,.08);top:-200px;left:-100px}
+.amb2{width:500px;height:500px;background:rgba(244,114,182,.06);bottom:-100px;right:-100px}
+
+.topbar{display:flex;justify-content:space-between;align-items:center;padding:1.5rem 2rem;max-width:1280px;margin:0 auto;position:relative;z-index:1}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.3rem;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-0.02em;cursor:pointer;text-decoration:none}
+.topbar-links{display:flex;gap:1rem;align-items:center}
+.topbar-link{color:var(--muted);font-size:.85rem;font-weight:500;text-decoration:none;padding:.5rem .9rem;border-radius:8px;transition:all .15s}
+.topbar-link:hover{color:var(--white)}
+
+.container{max-width:980px;margin:0 auto;padding:1rem 2rem 4rem;position:relative;z-index:1}
+.page-h1{font-family:'Syne',sans-serif;font-size:clamp(1.8rem,4vw,2.6rem);font-weight:800;letter-spacing:-.03em;margin-bottom:.4rem}
+.page-sub{color:var(--muted);font-size:.95rem;margin-bottom:2.5rem}
+.signed-out{text-align:center;padding:5rem 1rem;background:var(--s1);border:1px solid var(--border);border-radius:14px}
+
+/* Tabs */
+.tabs{display:flex;gap:.4rem;margin-bottom:2rem;border-bottom:1px solid var(--border);overflow-x:auto;padding-bottom:0}
+.tab{padding:.8rem 1.3rem;background:transparent;border:none;color:var(--muted);font-family:inherit;font-size:.92rem;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;position:relative}
+.tab:hover{color:var(--white)}
+.tab.active{color:var(--v);border-bottom-color:var(--v)}
+.tab-badge{display:inline-flex;align-items:center;justify-content:center;background:var(--r);color:#fff;font-size:.65rem;font-weight:800;padding:.1rem .4rem;border-radius:100px;margin-left:.3rem;min-width:18px}
+
+.tab-content{display:none}
+.tab-content.active{display:block}
+
+.card{background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:1.7rem;margin-bottom:1.2rem}
+.card-h{font-family:'Syne',sans-serif;font-weight:700;font-size:1.1rem;margin-bottom:.3rem;letter-spacing:-.01em}
+.card-sub{color:var(--muted);font-size:.88rem;margin-bottom:1.2rem}
+
+/* Subscription card */
+.sub-status{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:1.3rem}
+.sub-stat{padding:1rem 1.2rem;background:var(--s2);border:1px solid var(--border);border-radius:10px}
+.sub-stat-label{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;font-weight:700;margin-bottom:.3rem}
+.sub-stat-value{font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;color:var(--white)}
+.sub-stat-value.muted{color:var(--muted);font-size:.95rem;font-family:inherit;font-weight:500}
+
+.btn{padding:.7rem 1.3rem;border-radius:8px;font-weight:600;font-size:.88rem;cursor:pointer;font-family:inherit;border:none;transition:all .2s;display:inline-flex;align-items:center;justify-content:center;gap:.4rem}
+.btn-grad{background:var(--grad);color:#fff}
+.btn-grad:hover:not(:disabled){opacity:.9;transform:translateY(-1px)}
+.btn-grad:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--white)}
+.btn-ghost:hover{border-color:rgba(167,139,250,.4)}
+.btn-danger{background:transparent;border:1px solid rgba(248,113,113,.4);color:var(--r)}
+.btn-danger:hover:not(:disabled){background:rgba(248,113,113,.08);border-color:var(--r)}
+.btn-sm{padding:.45rem .85rem;font-size:.8rem}
+.btn[disabled]{opacity:.4;cursor:not-allowed}
+
+/* Purchases */
+.purchase{padding:1.2rem;background:var(--s2);border:1px solid var(--border);border-radius:10px;margin-bottom:.7rem;display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap}
+.purchase-info{flex:1;min-width:200px}
+.purchase-title{font-weight:700;color:var(--white);margin-bottom:.2rem;font-size:.95rem}
+.purchase-meta{font-size:.78rem;color:var(--muted);line-height:1.5}
+.purchase-meta b{color:var(--white);font-weight:600}
+.purchase-actions{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
+.refund-info{font-size:.72rem;color:var(--muted);max-width:260px;line-height:1.4}
+.status-badge{display:inline-block;font-size:.65rem;font-weight:700;padding:.2rem .5rem;border-radius:100px;text-transform:uppercase;letter-spacing:.05em}
+.status-active{background:rgba(74,222,128,.15);color:var(--g)}
+.status-pending{background:rgba(167,139,250,.15);color:var(--v)}
+.status-refunded{background:rgba(248,113,113,.15);color:var(--r)}
+.status-canceled{background:rgba(92,89,110,.2);color:var(--muted)}
+.status-approved{background:rgba(74,222,128,.15);color:var(--g)}
+.status-rejected{background:rgba(248,113,113,.15);color:var(--r)}
+
+/* Notifications */
+.notif{padding:1.1rem 1.2rem;background:var(--s2);border:1px solid var(--border);border-left:3px solid var(--v);border-radius:8px;margin-bottom:.6rem;position:relative}
+.notif.unread{background:rgba(167,139,250,.05);border-left-color:var(--v)}
+.notif.read{opacity:.7}
+.notif-title{font-weight:700;color:var(--white);margin-bottom:.2rem;font-size:.92rem}
+.notif-msg{color:var(--muted);font-size:.85rem;line-height:1.5;margin-bottom:.4rem}
+.notif-meta{font-size:.7rem;color:var(--muted);display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap}
+.notif-dot{position:absolute;top:1.2rem;right:1.2rem;width:8px;height:8px;background:var(--v);border-radius:50%}
+
+/* Referral */
+.referral-code-box{background:linear-gradient(135deg,rgba(167,139,250,.08),rgba(244,114,182,.06));border:1px solid rgba(167,139,250,.3);border-radius:12px;padding:1.5rem;margin-bottom:1rem;text-align:center}
+.referral-code{font-family:'Syne',sans-serif;font-size:2rem;font-weight:800;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:.1em;margin:.6rem 0}
+.referral-label{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:700}
+.referral-share{display:flex;gap:.5rem;justify-content:center;margin-top:1rem;flex-wrap:wrap}
+.referral-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.7rem;margin-top:1.3rem}
+.ref-stat{padding:.9rem;background:var(--s2);border:1px solid var(--border);border-radius:10px;text-align:center}
+.ref-stat-value{font-family:'Syne',sans-serif;font-size:1.6rem;font-weight:800;color:var(--white)}
+.ref-stat-label{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin-top:.2rem}
+
+/* Empty states */
+.empty{text-align:center;padding:3rem 1rem;color:var(--muted);background:var(--s2);border:1px dashed var(--border);border-radius:10px}
+.empty-icon{font-size:2.5rem;margin-bottom:.5rem}
+.empty-title{font-weight:600;color:var(--white);margin-bottom:.3rem;font-size:.95rem}
+.empty-text{font-size:.85rem;line-height:1.5}
+
+/* Modal */
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9998;align-items:center;justify-content:center;padding:2rem;backdrop-filter:blur(8px)}
+.modal.show{display:flex}
+.modal-card{background:var(--s1);border:1px solid var(--border);border-radius:16px;padding:2rem;max-width:480px;width:100%;max-height:90vh;overflow-y:auto}
+.modal-h{font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:800;letter-spacing:-.02em;margin-bottom:.5rem}
+.modal-sub{color:var(--muted);font-size:.88rem;line-height:1.6;margin-bottom:1.2rem}
+.modal-actions{display:flex;gap:.5rem;justify-content:flex-end;margin-top:1.5rem;flex-wrap:wrap}
+textarea.modal-input{width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:.8rem;color:var(--white);font-family:inherit;font-size:.88rem;resize:vertical;min-height:80px}
+textarea.modal-input:focus{outline:none;border-color:rgba(167,139,250,.5)}
+
+/* Toast */
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:.85rem 1.3rem;font-size:.84rem;transform:translateY(80px);opacity:0;transition:all .3s;z-index:9999;max-width:300px}
+@media(max-width:480px){.toast{left:1rem;right:1rem;bottom:1rem;max-width:none}}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.ok{border-color:rgba(74,222,128,.3);color:var(--g)}
+.toast.err{border-color:rgba(248,113,113,.3);color:var(--r)}
+.toast.info{border-color:rgba(167,139,250,.3);color:var(--v)}
+
+.spin{width:14px;height:14px;border:2px solid rgba(167,139,250,.3);border-top-color:var(--v);border-radius:50%;animation:spin .7s linear infinite;display:inline-block;vertical-align:middle;margin-right:.4rem}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading{text-align:center;padding:2rem;color:var(--muted)}
+
+@media (max-width:600px){
+  .container{padding:1rem 1.2rem 4rem}
+  .card{padding:1.3rem}
+  .purchase{flex-direction:column;align-items:flex-start}
+  .purchase-actions{width:100%}
+}
+</style>
+</head>
+<body>
+
+<div class="amb amb1"></div>
+<div class="amb amb2"></div>
+<div class="toast" id="toast"></div>
+
+<div class="topbar">
+  <a href="/" class="logo">CharaMaker</a>
+  <div class="topbar-links">
+    <a href="/" class="topbar-link">← Back to Studio</a>
+  </div>
+</div>
+
+<div class="container" id="container">
+  <div id="signed-out" class="signed-out" style="display:none">
+    <h2 class="page-h1">Sign in to continue</h2>
+    <p class="page-sub">Sign in to manage your subscription, refunds, and referrals.</p>
+    <button class="btn btn-grad" onclick="window.location.href='/'">Go to Studio</button>
+  </div>
+  
+  <div id="account-content" style="display:none">
+    <h1 class="page-h1">My Account</h1>
+    <p class="page-sub" id="account-email">Manage your subscription, refunds, and referrals.</p>
+    
+    <div class="tabs">
+      <button class="tab active" data-tab="subscription" onclick="setTab('subscription')">📋 Subscription</button>
+      <button class="tab" data-tab="purchases" onclick="setTab('purchases')">💳 Purchases</button>
+      <button class="tab" data-tab="notifications" onclick="setTab('notifications')">🔔 Notifications<span id="notif-badge" class="tab-badge" style="display:none">0</span></button>
+      <button class="tab" data-tab="referral" onclick="setTab('referral')">🎁 Referral</button>
+    </div>
+    
+    <!-- ── SUBSCRIPTION TAB ── -->
+    <div class="tab-content active" id="tab-subscription">
+      <div class="card">
+        <div class="card-h">Current Plan</div>
+        <div class="card-sub">Your active subscription and credit balance.</div>
+        <div id="sub-status-content" class="loading"><span class="spin"></span>Loading...</div>
+      </div>
+      
+      <div class="card" id="cancel-sub-card" style="display:none">
+        <div class="card-h">Cancel Subscription</div>
+        <div class="card-sub">Stop the next automatic charge. You'll keep your current credits and access until the end of your billing period, then move to the Free plan. This does <b>not</b> issue a refund — see the Purchases tab to request a refund if eligible.</div>
+        <button class="btn btn-danger" id="cancel-sub-btn" onclick="confirmCancelSubscription()">Cancel Subscription</button>
+      </div>
+    </div>
+    
+    <!-- ── PURCHASES TAB ── -->
+    <div class="tab-content" id="tab-purchases">
+      <div class="card">
+        <div class="card-h">Recent Purchases</div>
+        <div class="card-sub">All purchases from the last 30 days. Eligible items can be refunded based on our <a href="/terms" style="color:var(--v)">refund policy</a> (within 7 days, less than 10% credits used).</div>
+        <div id="purchases-list" class="loading"><span class="spin"></span>Loading...</div>
+      </div>
+    </div>
+    
+    <!-- ── NOTIFICATIONS TAB ── -->
+    <div class="tab-content" id="tab-notifications">
+      <div class="card">
+        <div class="card-h">Notifications</div>
+        <div class="card-sub">Updates about your refunds, referrals, and account activity.</div>
+        <div style="margin-bottom:1rem">
+          <button class="btn btn-ghost btn-sm" onclick="markAllRead()">Mark all as read</button>
+        </div>
+        <div id="notifications-list" class="loading"><span class="spin"></span>Loading...</div>
+      </div>
+    </div>
+    
+    <!-- ── REFERRAL TAB ── -->
+    <div class="tab-content" id="tab-referral">
+      <div class="card">
+        <div class="card-h">Refer a friend, earn 500 credits</div>
+        <div class="card-sub">Share your code. When a friend signs up and makes their first purchase, you get <b>500 credits</b> instantly. They get <b>5% off</b> their first purchase.</div>
+        <div id="referral-content" class="loading"><span class="spin"></span>Loading...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Refund Request Modal -->
+<div class="modal" id="refund-modal" onclick="closeRefundModal()">
+  <div class="modal-card" onclick="event.stopPropagation()">
+    <div class="modal-h">Request Refund</div>
+    <div class="modal-sub" id="refund-modal-info">Loading...</div>
+    <label class="referral-label" style="display:block;margin-bottom:.4rem;color:var(--muted)">Reason (optional)</label>
+    <textarea class="modal-input" id="refund-reason" placeholder="Help us improve — let us know why you're requesting a refund..."></textarea>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeRefundModal()">Cancel</button>
+      <button class="btn btn-grad" id="refund-submit-btn" onclick="submitRefundRequest()">Submit Request</button>
+    </div>
+  </div>
+</div>
+
+<!-- Cancel Sub Confirm Modal -->
+<div class="modal" id="cancel-modal" onclick="closeCancelModal()">
+  <div class="modal-card" onclick="event.stopPropagation()">
+    <div class="modal-h">Cancel Subscription?</div>
+    <div class="modal-sub">
+      <b>What happens:</b><br>
+      • Your next automatic charge will be stopped.<br>
+      • You'll keep your current plan & credits until <b id="cancel-end-date">the end of your billing period</b>.<br>
+      • After that, you'll be moved to the Free plan.<br>
+      • No refund is issued. To request a refund instead, go to the <b>Purchases</b> tab.<br><br>
+      You can resubscribe anytime.
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeCancelModal()">Keep Subscription</button>
+      <button class="btn btn-danger" id="confirm-cancel-btn" onclick="performCancelSubscription()">Yes, Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = window.CONFIG.API;
+const supa = window.supabase.createClient(window.CONFIG.SUPABASE_URL, window.CONFIG.SUPABASE_KEY);
+
+const S = {
+  user: null,
+  session: null,
+  currentTab: 'subscription',
+  selectedPurchase: null,
+  subscription: null,
+  purchases: [],
+  notifications: [],
+  referral: null,
+};
+
+let toastT;
+function toast(msg, type='ok'){
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.className = `toast ${type} show`;
+  clearTimeout(toastT);
+  toastT = setTimeout(()=>el.classList.remove('show'), 3500);
+}
+
+async function init() {
+  const { data: { session } } = await supa.auth.getSession();
+  if (!session?.user) {
+    document.getElementById('signed-out').style.display = 'block';
+    return;
+  }
+  S.user = session.user;
+  S.session = session;
+  document.getElementById('account-content').style.display = 'block';
+  document.getElementById('account-email').textContent = S.user.email;
+  
+  // Load initial data
+  await Promise.all([
+    loadSubscription(),
+    loadNotificationCount(),
+  ]);
+}
+
+function setTab(tab) {
+  S.currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById(`tab-${tab}`).classList.add('active');
+  
+  if (tab === 'subscription' && !S.subscription) loadSubscription();
+  if (tab === 'purchases') loadPurchases();
+  if (tab === 'notifications') loadNotifications();
+  if (tab === 'referral') loadReferral();
+}
+
+async function apiCall(path, options = {}) {
+  return fetch(`${API}${path}`, {
+    ...options,
+    headers: {
+      'authorization': `Bearer ${S.session.access_token}`,
+      'content-type': 'application/json',
+      ...(options.headers || {})
+    }
+  });
+}
+
+// ─── SUBSCRIPTION ───
+async function loadSubscription() {
+  try {
+    const res = await apiCall('/api/billing/subscription');
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error);
+    
+    S.subscription = data;
+    renderSubscription();
+  } catch (e) {
+    document.getElementById('sub-status-content').innerHTML = 
+      `<div style="color:var(--r)">Failed to load: ${e.message}</div>`;
+  }
+}
+
+function renderSubscription() {
+  const s = S.subscription;
+  const planLabel = (s.plan || 'free').charAt(0).toUpperCase() + (s.plan || 'free').slice(1);
+  const isPaid = s.plan !== 'free' && s.plan !== 'admin';
+  
+  let statusLabel = 'Free';
+  let statusClass = 'status-canceled';
+  
+  if (s.subscription_status === 'active') {
+    statusLabel = 'Active';
+    statusClass = 'status-active';
+  } else if (s.subscription_status === 'canceled') {
+    statusLabel = 'Canceling';
+    statusClass = 'status-pending';
+  }
+  
+  const endDate = s.current_period_end 
+    ? new Date(s.current_period_end).toLocaleDateString(undefined, {year:'numeric',month:'long',day:'numeric'})
+    : '—';
+  
+  document.getElementById('sub-status-content').innerHTML = `
+    <div class="sub-status">
+      <div class="sub-stat">
+        <div class="sub-stat-label">Plan</div>
+        <div class="sub-stat-value">${planLabel}</div>
+      </div>
+      <div class="sub-stat">
+        <div class="sub-stat-label">Credits</div>
+        <div class="sub-stat-value">${(s.credits ?? 0).toLocaleString()}</div>
+      </div>
+      <div class="sub-stat">
+        <div class="sub-stat-label">Status</div>
+        <div class="sub-stat-value muted"><span class="status-badge ${statusClass}">${statusLabel}</span></div>
+      </div>
+      ${isPaid ? `
+      <div class="sub-stat">
+        <div class="sub-stat-label">${s.subscription_status === 'canceled' ? 'Access until' : 'Next billing'}</div>
+        <div class="sub-stat-value muted">${endDate}</div>
+      </div>` : ''}
+    </div>
+    ${!isPaid ? `<button class="btn btn-grad" onclick="window.location.href='/pricing'">View Plans →</button>` : ''}
+  `;
+  
+  // Show cancel button if subscription is cancelable
+  if (s.can_cancel) {
+    document.getElementById('cancel-sub-card').style.display = 'block';
+    document.getElementById('cancel-end-date').textContent = endDate;
+  } else {
+    document.getElementById('cancel-sub-card').style.display = 'none';
+  }
+}
+
+function confirmCancelSubscription() {
+  document.getElementById('cancel-modal').classList.add('show');
+}
+function closeCancelModal() {
+  document.getElementById('cancel-modal').classList.remove('show');
+}
+
+async function performCancelSubscription() {
+  const btn = document.getElementById('confirm-cancel-btn');
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Canceling...';
+  
+  try {
+    const res = await apiCall('/api/billing/cancel-subscription', { method: 'POST' });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Cancellation failed');
+    
+    toast('Subscription canceled — you\'ll keep access until your period ends ✓');
+    closeCancelModal();
+    await loadSubscription();
+  } catch (e) {
+    toast(e.message, 'err');
+  }
+  
+  btn.disabled = false; btn.textContent = 'Yes, Cancel';
+}
+
+// ─── PURCHASES ───
+async function loadPurchases() {
+  try {
+    const res = await apiCall('/api/billing/purchases');
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error);
+    
+    S.purchases = data.purchases || [];
+    renderPurchases();
+  } catch (e) {
+    document.getElementById('purchases-list').innerHTML = 
+      `<div style="color:var(--r)">Failed to load: ${e.message}</div>`;
+  }
+}
+
+async function renderPurchases() {
+  const container = document.getElementById('purchases-list');
+  
+  if (!S.purchases.length) {
+    container.innerHTML = `
+      <div class="empty">
+        <div class="empty-icon">💳</div>
+        <div class="empty-title">No purchases yet</div>
+        <div class="empty-text">Purchases from the last 30 days appear here.</div>
+      </div>`;
+    return;
+  }
+  
+  // Render each purchase
+  container.innerHTML = S.purchases.map(p => {
+    const date = new Date(p.created_at).toLocaleDateString(undefined, {year:'numeric',month:'short',day:'numeric'});
+    const isRefunded = p.status === 'refunded';
+    const planOrPack = p.plan_name || p.pack_name || 'Purchase';
+    
+    return `
+      <div class="purchase" data-id="${p.id}">
+        <div class="purchase-info">
+          <div class="purchase-title">${planOrPack} ${isRefunded ? '<span class="status-badge status-refunded">Refunded</span>' : ''}</div>
+          <div class="purchase-meta">
+            <b>$${parseFloat(p.amount_usd).toFixed(2)}</b> · ${p.credits_granted.toLocaleString()} credits · ${date}
+          </div>
+        </div>
+        <div class="purchase-actions">
+          <div id="refund-status-${p.id}" class="refund-info">Checking refund eligibility...</div>
+          <button class="btn btn-ghost btn-sm" id="refund-btn-${p.id}" onclick="openRefundModal('${p.id}')" disabled>Request Refund</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+  
+  // Check refund eligibility for each (async, in parallel)
+  S.purchases.forEach(async p => {
+    if (p.status === 'refunded') {
+      document.getElementById(`refund-status-${p.id}`).textContent = 'Already refunded';
+      return;
+    }
+    
+    try {
+      const res = await apiCall(`/api/billing/refund-eligibility?billing_event_id=${p.id}`);
+      const data = await res.json();
+      
+      const statusEl = document.getElementById(`refund-status-${p.id}`);
+      const btnEl = document.getElementById(`refund-btn-${p.id}`);
+      
+      if (data.ok && data.eligibility?.eligible) {
+        statusEl.innerHTML = `<span style="color:var(--g)">✓ Eligible for refund</span>`;
+        btnEl.disabled = false;
+        btnEl.classList.add('btn-danger');
+        btnEl.classList.remove('btn-ghost');
+      } else {
+        const reason = data.eligibility?.reason || 'Not eligible';
+        if (reason.includes('pending')) {
+          statusEl.innerHTML = `<span style="color:var(--v)">⏳ Refund request pending review</span>`;
+          btnEl.textContent = 'Pending';
+        } else {
+          statusEl.innerHTML = `<span style="color:var(--muted)">${reason}</span>`;
+        }
+      }
+    } catch (e) {
+      document.getElementById(`refund-status-${p.id}`).textContent = 'Could not check';
+    }
+  });
+}
+
+let currentRefundPurchase = null;
+
+function openRefundModal(billingEventId) {
+  currentRefundPurchase = S.purchases.find(p => p.id === billingEventId);
+  if (!currentRefundPurchase) return;
+  
+  document.getElementById('refund-modal-info').innerHTML = `
+    You are requesting a refund for:<br><br>
+    <b>${currentRefundPurchase.plan_name || currentRefundPurchase.pack_name}</b><br>
+    Amount: <b>$${parseFloat(currentRefundPurchase.amount_usd).toFixed(2)}</b><br>
+    Credits granted: <b>${currentRefundPurchase.credits_granted.toLocaleString()}</b><br><br>
+    Your request will be reviewed by our team within 2 business days. If approved, the credits from this purchase will be deducted from your balance and the refund will be processed to your original payment method.
+  `;
+  document.getElementById('refund-reason').value = '';
+  document.getElementById('refund-modal').classList.add('show');
+}
+
+function closeRefundModal() {
+  document.getElementById('refund-modal').classList.remove('show');
+  currentRefundPurchase = null;
+}
+
+async function submitRefundRequest() {
+  if (!currentRefundPurchase) return;
+  
+  const btn = document.getElementById('refund-submit-btn');
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Submitting...';
+  
+  try {
+    const res = await apiCall('/api/billing/request-refund', {
+      method: 'POST',
+      body: JSON.stringify({
+        billing_event_id: currentRefundPurchase.id,
+        reason: document.getElementById('refund-reason').value.trim() || null
+      })
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Request failed');
+    
+    toast('Refund request submitted! We\'ll review within 2 days ✓');
+    closeRefundModal();
+    await loadPurchases();
+  } catch (e) {
+    toast(e.message, 'err');
+  }
+  
+  btn.disabled = false; btn.textContent = 'Submit Request';
+}
+
+// ─── NOTIFICATIONS ───
+async function loadNotificationCount() {
+  try {
+    const res = await apiCall('/api/notifications?unread=true');
+    const data = await res.json();
+    if (!data.ok) return;
+    
+    const count = data.notifications?.length || 0;
+    const badge = document.getElementById('notif-badge');
+    if (count > 0) {
+      badge.textContent = count;
+      badge.style.display = 'inline-flex';
+    } else {
+      badge.style.display = 'none';
+    }
+  } catch (e) { /* ignore */ }
+}
+
+async function loadNotifications() {
+  try {
+    const res = await apiCall('/api/notifications');
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error);
+    
+    S.notifications = data.notifications || [];
+    renderNotifications();
+  } catch (e) {
+    document.getElementById('notifications-list').innerHTML = 
+      `<div style="color:var(--r)">Failed to load: ${e.message}</div>`;
+  }
+}
+
+function renderNotifications() {
+  const container = document.getElementById('notifications-list');
+  
+  if (!S.notifications.length) {
+    container.innerHTML = `
+      <div class="empty">
+        <div class="empty-icon">🔔</div>
+        <div class="empty-title">No notifications yet</div>
+        <div class="empty-text">You'll see updates about your refunds, referrals, and account here.</div>
+      </div>`;
+    return;
+  }
+  
+  container.innerHTML = S.notifications.map(n => {
+    const date = new Date(n.created_at).toLocaleString(undefined, {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+    const isUnread = !n.read_at;
+    return `
+      <div class="notif ${isUnread ? 'unread' : 'read'}">
+        ${isUnread ? '<div class="notif-dot"></div>' : ''}
+        <div class="notif-title">${escapeHtml(n.title)}</div>
+        <div class="notif-msg">${escapeHtml(n.message)}</div>
+        <div class="notif-meta">
+          <span>${date}</span>
+          ${n.action_url ? `<a href="${n.action_url}" style="color:var(--v);text-decoration:none">${n.action_label || 'View'} →</a>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function markAllRead() {
+  try {
+    await apiCall('/api/notifications/mark-read', { method: 'POST', body: JSON.stringify({}) });
+    await loadNotifications();
+    await loadNotificationCount();
+    toast('All marked as read ✓');
+  } catch (e) {
+    toast('Failed', 'err');
+  }
+}
+
+// ─── REFERRAL ───
+async function loadReferral() {
+  try {
+    const res = await apiCall('/api/referral/my-code');
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error);
+    
+    S.referral = data;
+    renderReferral();
+  } catch (e) {
+    document.getElementById('referral-content').innerHTML = 
+      `<div style="color:var(--r)">Failed to load: ${e.message}</div>`;
+  }
+}
+
+function renderReferral() {
+  const r = S.referral;
+  document.getElementById('referral-content').innerHTML = `
+    <div class="referral-code-box">
+      <div class="referral-label">Your referral code</div>
+      <div class="referral-code">${r.code}</div>
+      <div style="font-size:.8rem;color:var(--muted);margin-bottom:.7rem">${r.share_url}</div>
+      <div class="referral-share">
+        <button class="btn btn-grad btn-sm" onclick="copyReferralLink()">📋 Copy Link</button>
+        <button class="btn btn-ghost btn-sm" onclick="shareReferralTwitter()">🐦 Share on X</button>
+      </div>
+    </div>
+    
+    <div class="referral-stats">
+      <div class="ref-stat">
+        <div class="ref-stat-value">${r.total_referrals || 0}</div>
+        <div class="ref-stat-label">Signups</div>
+      </div>
+      <div class="ref-stat">
+        <div class="ref-stat-value">${r.successful_referrals || 0}</div>
+        <div class="ref-stat-label">Paid</div>
+      </div>
+      <div class="ref-stat">
+        <div class="ref-stat-value">${r.total_credits_earned || 0}</div>
+        <div class="ref-stat-label">Credits Earned</div>
+      </div>
+    </div>
+    
+    <div style="margin-top:1.5rem;padding:1rem;background:var(--s2);border:1px solid var(--border);border-radius:8px;font-size:.83rem;color:var(--muted);line-height:1.6">
+      <b style="color:var(--white)">How it works:</b><br>
+      1. Share your code or link with friends.<br>
+      2. They get 5% off their first purchase when they sign up with your code.<br>
+      3. When they make their first purchase, you receive <b style="color:var(--v)">500 credits</b> instantly.<br><br>
+      Self-referrals and abuse may result in code suspension.
+    </div>
+  `;
+}
+
+function copyReferralLink() {
+  navigator.clipboard.writeText(S.referral.share_url)
+    .then(() => toast('Link copied ✓'))
+    .catch(() => toast('Copy failed', 'err'));
+}
+
+function shareReferralTwitter() {
+  const text = `I'm creating AI characters on CharaMaker. Get 5% off your first purchase with my code:\n\n`;
+  const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(S.referral.share_url)}`;
+  window.open(url, '_blank');
+}
+
+function escapeHtml(s) {
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+init();
+</script>
+</body>
+</html>
