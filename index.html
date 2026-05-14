@@ -2511,11 +2511,63 @@ async function loadGallery(targetId, filterType) {
 
   let items = [];
   try {
-    let q = supa.from('showcase').select('*').eq('is_active', true).order('display_order', { ascending: true }).order('created_at', { ascending: false }).limit(12);
-    if (filterType) q = q.eq('type', filterType);
-    const { data, error } = await q;
-    if (error) throw error;
-    items = data || [];
+    // Home landing gallery: 비디오 우선 + 더 많이 (24개)
+    // 다른 갤러리(이미지/비디오 탭 내부): 기존대로 12개
+    const isHomeGallery = (targetId === 'home-landing-gallery');
+    const totalLimit = isHomeGallery ? 24 : 12;
+    
+    if (isHomeGallery && !filterType) {
+      // 🆕 홈 갤러리: 비디오 16개 + 이미지/캐릭터 8개 (비디오 ~67%)
+      // 비디오 부족하면 이미지로 채움
+      const videoLimit = 16;
+      const imageLimit = totalLimit - videoLimit;  // 8
+      
+      const [videoRes, imageRes] = await Promise.all([
+        supa.from('showcase')
+          .select('*')
+          .eq('is_active', true)
+          .eq('type', 'video')
+          .order('display_order', { ascending: true })
+          .order('created_at', { ascending: false })
+          .limit(videoLimit),
+        supa.from('showcase')
+          .select('*')
+          .eq('is_active', true)
+          .in('type', ['image', 'character'])
+          .order('display_order', { ascending: true })
+          .order('created_at', { ascending: false })
+          .limit(imageLimit)
+      ]);
+      
+      if (videoRes.error) throw videoRes.error;
+      if (imageRes.error) throw imageRes.error;
+      
+      const videos = videoRes.data || [];
+      const images = imageRes.data || [];
+      
+      // 비디오 부족하면 이미지로 더 채우기
+      if (videos.length < videoLimit) {
+        const additional = videoLimit - videos.length;
+        const extraRes = await supa.from('showcase')
+          .select('*')
+          .eq('is_active', true)
+          .in('type', ['image', 'character'])
+          .order('display_order', { ascending: true })
+          .order('created_at', { ascending: false })
+          .range(imageLimit, imageLimit + additional - 1);
+        if (extraRes.data) images.push(...extraRes.data);
+      }
+      
+      // 비디오를 앞에 + 이미지를 자연스럽게 섞기 (3개마다 이미지 1개)
+      items = interleaveVideosAndImages(videos, images);
+    } else {
+      // 기존 갤러리 (이미지/비디오 탭 등): 단순 로드
+      let q = supa.from('showcase').select('*').eq('is_active', true).order('display_order', { ascending: true }).order('created_at', { ascending: false }).limit(totalLimit);
+      if (filterType) q = q.eq('type', filterType);
+      const { data, error } = await q;
+      if (error) throw error;
+      items = data || [];
+    }
   } catch (e) {
     console.warn('[gallery] load failed:', e.message);
     el.innerHTML = '<div class="gallery-empty">Showcase coming soon ✨</div>';
@@ -2565,6 +2617,27 @@ async function loadGallery(targetId, filterType) {
       </div>
     `;
   }).join('');
+}
+
+// 🆕 비디오를 앞에 두면서 이미지를 자연스럽게 섞는 함수
+// 비디오 비중을 높게 유지하면서도 변화를 주기 위해 사용
+function interleaveVideosAndImages(videos, images) {
+  const result = [];
+  let vIdx = 0, iIdx = 0;
+  
+  // 비디오 3개마다 이미지 1개 끼워넣기
+  while (vIdx < videos.length || iIdx < images.length) {
+    // 비디오 3개 추가
+    for (let i = 0; i < 3 && vIdx < videos.length; i++) {
+      result.push(videos[vIdx++]);
+    }
+    // 이미지 1개 추가
+    if (iIdx < images.length) {
+      result.push(images[iIdx++]);
+    }
+  }
+  
+  return result;
 }
 
 async function handleBrokenGalleryItem(el, showcaseId) {
