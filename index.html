@@ -2748,22 +2748,56 @@ function copyCaption(btn, text) {
 async function downloadImage() {
   if (!S.lastImage) return;
   try {
-    const r = await fetch(S.lastImage); const b = await r.blob();
-    const u = URL.createObjectURL(b);
+    // Try direct fetch first (fast path for CORS-enabled URLs)
+    let blob;
+    try {
+      const r = await fetch(S.lastImage);
+      if (!r.ok) throw new Error('direct fetch failed');
+      blob = await r.blob();
+    } catch (directErr) {
+      // Fallback: use worker proxy (handles CORS-blocked URLs like Atlas Cloud)
+      console.log('[downloadImage] direct fetch failed, using proxy');
+      const proxyUrl = `${API}/api/download-proxy?url=${encodeURIComponent(S.lastImage)}`;
+      const r2 = await fetch(proxyUrl);
+      if (!r2.ok) throw new Error('proxy failed');
+      blob = await r2.blob();
+    }
+    
+    const u = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = u; a.download = 'character.png';
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     URL.revokeObjectURL(u);
-  } catch { toast('Download failed','err'); }
+  } catch (e) { 
+    console.error('[downloadImage]', e);
+    toast('Download failed', 'err'); 
+  }
 }
 async function downloadVideo() {
   if (!S.lastVideo) return;
   try {
-    const r = await fetch(S.lastVideo); const b = await r.blob();
-    const u = URL.createObjectURL(b);
+    // Try direct fetch first (fast path for CORS-enabled URLs)
+    let blob;
+    try {
+      const r = await fetch(S.lastVideo);
+      if (!r.ok) throw new Error('direct fetch failed');
+      blob = await r.blob();
+    } catch (directErr) {
+      // Fallback: use worker proxy (handles CORS-blocked URLs like Atlas Cloud)
+      console.log('[downloadVideo] direct fetch failed, using proxy');
+      const proxyUrl = `${API}/api/download-proxy?url=${encodeURIComponent(S.lastVideo)}`;
+      const r2 = await fetch(proxyUrl);
+      if (!r2.ok) throw new Error('proxy failed');
+      blob = await r2.blob();
+    }
+    
+    const u = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = u; a.download = 'video.mp4';
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     URL.revokeObjectURL(u);
-  } catch { toast('Download failed','err'); }
+  } catch (e) { 
+    console.error('[downloadVideo]', e);
+    toast('Download failed', 'err'); 
+  }
 }
 
 // ═══════════════════════════════════════════════════════════
