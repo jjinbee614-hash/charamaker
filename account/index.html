@@ -266,9 +266,21 @@ const S = {
 let toastT;
 function toast(msg, type='ok'){
   const el = document.getElementById('toast');
-  el.textContent = msg; el.className = `toast ${type} show`;
+  // 객체를 그대로 표시하지 않게 문자열로 변환
+  let text;
+  if (typeof msg === 'string') {
+    text = msg;
+  } else if (msg instanceof Error) {
+    text = msg.message;
+  } else if (msg && typeof msg === 'object') {
+    text = msg.message || msg.error || JSON.stringify(msg);
+  } else {
+    text = String(msg);
+  }
+  el.textContent = text;
+  el.className = `toast ${type} show`;
   clearTimeout(toastT);
-  toastT = setTimeout(()=>el.classList.remove('show'), 3500);
+  toastT = setTimeout(()=>el.classList.remove('show'), 4500);
 }
 
 async function init() {
@@ -344,7 +356,7 @@ function renderSubscription() {
   }
   
   const endDate = s.current_period_end 
-    ? new Date(s.current_period_end).toLocaleDateString(undefined, {year:'numeric',month:'long',day:'numeric'})
+    ? new Date(s.current_period_end).toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'})
     : '—';
   
   document.getElementById('sub-status-content').innerHTML = `
@@ -393,13 +405,18 @@ async function performCancelSubscription() {
   try {
     const res = await apiCall('/api/billing/cancel-subscription', { method: 'POST' });
     const data = await res.json();
-    if (!data.ok) throw new Error(data.error || 'Cancellation failed');
+    if (!data.ok) {
+      // Show full error message
+      const errMsg = data.error || data.message || 'Cancellation failed';
+      throw new Error(errMsg);
+    }
     
     toast('Subscription canceled — you\'ll keep access until your period ends ✓');
     closeCancelModal();
     await loadSubscription();
   } catch (e) {
-    toast(e.message, 'err');
+    console.error('[cancel-sub]', e);
+    toast(e.message || 'Failed to cancel', 'err');
   }
   
   btn.disabled = false; btn.textContent = 'Yes, Cancel';
@@ -435,7 +452,7 @@ async function renderPurchases() {
   
   // Render each purchase
   container.innerHTML = S.purchases.map(p => {
-    const date = new Date(p.created_at).toLocaleDateString(undefined, {year:'numeric',month:'short',day:'numeric'});
+    const date = new Date(p.created_at).toLocaleDateString('en-US', {year:'numeric',month:'short',day:'numeric'});
     const isRefunded = p.status === 'refunded';
     const planOrPack = p.plan_name || p.pack_name || 'Purchase';
     
@@ -584,7 +601,7 @@ function renderNotifications() {
   }
   
   container.innerHTML = S.notifications.map(n => {
-    const date = new Date(n.created_at).toLocaleString(undefined, {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+    const date = new Date(n.created_at).toLocaleString('en-US', {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
     const isUnread = !n.read_at;
     return `
       <div class="notif ${isUnread ? 'unread' : 'read'}">
