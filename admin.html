@@ -112,6 +112,7 @@ h1 { font-family:'Syne',sans-serif; font-size:2rem; font-weight:800; letter-spac
     <button class="tab"        data-tab="rejected" onclick="setTab('rejected')">— Rejected</button>
     <button class="tab"        data-tab="gallery"  onclick="setTab('gallery')">🖼️ Live gallery</button>
     <button class="tab"        data-tab="credits"  onclick="setTab('credits')">⚡ Credits</button>
+    <button class="tab"        data-tab="refunds"  onclick="setTab('refunds')">💸 Refunds <span id="refunds-badge" style="background:var(--r);color:#fff;font-size:.65rem;font-weight:800;padding:.1rem .4rem;border-radius:100px;margin-left:.3rem;display:none">0</span></button>
   </div>
 
   <div id="content"><div class="loading">Loading...</div></div>
@@ -200,6 +201,7 @@ function showPanel() {
   av.innerHTML = avatar ? `<img src="${avatar}" alt="">` : initial;
   document.getElementById('me-who').innerHTML = `<b>${escapeHtml(name)}</b><br>${escapeHtml(state.user.email || '')}`;
 
+  loadPendingRefundCount();
   setTab('pending');
 }
 
@@ -259,6 +261,7 @@ function setTab(tab) {
   document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
   if (tab === 'gallery') loadGallery();
   else if (tab === 'credits') loadCreditsTab();
+  else if (tab === 'refunds') loadRefundsTab();
   else loadSubmissions(tab);
 }
 
@@ -596,6 +599,264 @@ function toast(msg, kind) {
   el.className = 'toast ' + (kind || '') + ' show';
   setTimeout(() => el.classList.remove('show'), 2200);
 }
+
+// ═══════════════════════════════════════════════════════════
+// REFUND ADMIN TAB
+// ═══════════════════════════════════════════════════════════
+let refundsState = { tab: 'pending', requests: [] };
+
+async function loadPendingRefundCount() {
+  try {
+    const { data: { session } } = await supa.auth.getSession();
+    if (!session) return;
+    const res = await fetch(`${API}/api/admin/refund-requests?status=pending`, {
+      headers: { 'authorization': `Bearer ${session.access_token}` }
+    });
+    const data = await res.json();
+    if (data.ok && data.requests?.length > 0) {
+      const badge = document.getElementById('refunds-badge');
+      badge.textContent = data.requests.length;
+      badge.style.display = 'inline-block';
+    }
+  } catch (e) { console.warn('[refund count]', e); }
+}
+
+async function loadRefundsTab() {
+  const content = document.getElementById('content');
+  content.innerHTML = `
+    <div style="margin-bottom:1rem;display:flex;gap:.5rem;flex-wrap:wrap">
+      <button class="btn btn-ghost" id="rf-tab-pending"  onclick="loadRefundList('pending')">⏳ Pending</button>
+      <button class="btn btn-ghost" id="rf-tab-approved" onclick="loadRefundList('approved')">✓ Approved</button>
+      <button class="btn btn-ghost" id="rf-tab-rejected" onclick="loadRefundList('rejected')">✗ Rejected</button>
+    </div>
+    <div id="refund-content"><div class="loading">Loading refund requests...</div></div>
+  `;
+  loadRefundList('pending');
+}
+
+async function loadRefundList(statusFilter) {
+  refundsState.tab = statusFilter;
+  
+  ['pending','approved','rejected'].forEach(s => {
+    const btn = document.getElementById(`rf-tab-${s}`);
+    if (btn) {
+      if (s === statusFilter) {
+        btn.style.borderColor = 'var(--v)';
+        btn.style.color = 'var(--v)';
+      } else {
+        btn.style.borderColor = '';
+        btn.style.color = '';
+      }
+    }
+  });
+  
+  const container = document.getElementById('refund-content');
+  container.innerHTML = '<div class="loading">Loading...</div>';
+  
+  try {
+    const { data: { session } } = await supa.auth.getSession();
+    const res = await fetch(`${API}/api/admin/refund-requests?status=${statusFilter}`, {
+      headers: { 'authorization': `Bearer ${session.access_token}` }
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error);
+    
+    refundsState.requests = data.requests || [];
+    renderRefundList();
+  } catch (e) {
+    container.innerHTML = `<div class="empty">Failed: ${escapeHtml(e.message)}</div>`;
+  }
+}
+
+function renderRefundList() {
+  const container = document.getElementById('refund-content');
+  
+  if (!refundsState.requests.length) {
+    container.innerHTML = `
+      <div class="empty">
+        <div style="font-size:2.5rem;margin-bottom:.5rem">💸</div>
+        <div style="font-weight:600;color:var(--white);margin-bottom:.3rem">No ${refundsState.tab} requests</div>
+        <div style="font-size:.85rem">Refund requests with this status will appear here.</div>
+      </div>`;
+    return;
+  }
+  
+  container.innerHTML = refundsState.requests.map(r => {
+    const requestDate = new Date(r.created_at).toLocaleString();
+    const reviewedDate = r.reviewed_at ? new Date(r.reviewed_at).toLocaleString() : null;
+    const usagePercent = r.credits_granted > 0 
+      ? ((r.credits_used_at_request / r.credits_granted) * 100).toFixed(1)
+      : 0;
+    
+    const recentUsageHtml = (r.recent_usage || []).slice(0, 5).map(t => `
+      <div style="font-size:.75rem;color:var(--muted);padding:.2rem 0">
+        ${t.amount > 0 ? '+' : ''}${t.amount} · ${t.reason} · ${new Date(t.created_at).toLocaleDateString()}
+      </div>
+    `).join('');
+    
+    const statusStyle = r.status === 'pending' ? 'rgba(167,139,250,.15);color:var(--v)' :
+                       r.status === 'approved' ? 'rgba(52,211,153,.15);color:var(--g)' :
+                       'rgba(248,113,113,.15);color:var(--r)';
+    
+    return `
+      <div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin-bottom:1rem">
+        <div style="display:grid;grid-template-columns:1fr auto;gap:1rem;margin-bottom:1rem;align-items:start">
+          <div>
+            <div style="font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700;margin-bottom:.3rem">
+              ${escapeHtml(r.plan_or_pack)} — $${parseFloat(r.amount_usd).toFixed(2)}
+            </div>
+            <div style="font-size:.85rem;color:var(--muted);line-height:1.6">
+              <b style="color:var(--white)">User:</b> ${escapeHtml(r.user_email)}<br>
+              <b style="color:var(--white)">UID:</b> <code style="font-size:.75rem;background:var(--s3);padding:.1rem .4rem;border-radius:4px">${r.user_id}</code><br>
+              <b style="color:var(--white)">Current plan:</b> ${escapeHtml(r.current_plan)}<br>
+              <b style="color:var(--white)">Current credits:</b> ${r.current_credits.toLocaleString()}<br>
+              <b style="color:var(--white)">Credits granted:</b> ${r.credits_granted.toLocaleString()}<br>
+              <b style="color:var(--white)">Used at request:</b> ${r.credits_used_at_request.toLocaleString()} (${usagePercent}%)<br>
+              <b style="color:var(--white)">Requested:</b> ${requestDate}
+              ${reviewedDate ? `<br><b style="color:var(--white)">Reviewed:</b> ${reviewedDate}` : ''}
+            </div>
+          </div>
+          <div style="text-align:right">
+            <span style="display:inline-block;font-size:.7rem;font-weight:700;padding:.3rem .7rem;border-radius:100px;background:${statusStyle}">${r.status.toUpperCase()}</span>
+          </div>
+        </div>
+        
+        ${r.user_reason ? `
+          <div style="margin-bottom:1rem;padding:.8rem;background:var(--s2);border-radius:8px;border-left:3px solid var(--v)">
+            <div style="font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:.3rem">User's reason</div>
+            <div style="font-size:.85rem;color:var(--white);line-height:1.5">${escapeHtml(r.user_reason)}</div>
+          </div>
+        ` : ''}
+        
+        ${recentUsageHtml ? `
+          <div style="margin-bottom:1rem;padding:.8rem;background:var(--s2);border-radius:8px">
+            <div style="font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:.4rem">Recent credit activity (last 5)</div>
+            ${recentUsageHtml}
+          </div>
+        ` : ''}
+        
+        ${r.admin_notes ? `
+          <div style="margin-bottom:1rem;padding:.8rem;background:rgba(167,139,250,.06);border-radius:8px;border-left:3px solid var(--p)">
+            <div style="font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:.3rem">Admin notes</div>
+            <div style="font-size:.85rem;color:var(--white);line-height:1.5">${escapeHtml(r.admin_notes)}</div>
+          </div>
+        ` : ''}
+        
+        ${r.status === 'pending' ? `
+          <div style="display:flex;gap:.5rem;margin-top:1rem">
+            <button class="btn btn-success" style="flex:1" onclick="approveRefund('${r.id}', '${r.amount_usd}', '${escapeHtml(r.user_email)}')">✓ Approve & Refund</button>
+            <button class="btn btn-danger" style="flex:1" onclick="rejectRefund('${r.id}', '${escapeHtml(r.user_email)}')">✗ Reject</button>
+          </div>
+        ` : ''}
+        
+        ${r.polar_refund_id ? `
+          <div style="margin-top:1rem;font-size:.75rem;color:var(--muted)">
+            Polar refund ID: <code style="background:var(--s3);padding:.1rem .4rem;border-radius:4px">${r.polar_refund_id}</code>
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+async function approveRefund(requestId, amount, userEmail) {
+  const adminNotes = prompt(
+    `Approve refund of $${amount} for ${userEmail}?\n\n` +
+    `This will:\n` +
+    `1. Issue refund via Polar API\n` +
+    `2. Deduct granted credits from user's balance\n` +
+    `3. Send approval notification to user\n\n` +
+    `Optional notes (visible to user):`,
+    ''
+  );
+  
+  if (adminNotes === null) return;
+  
+  try {
+    const { data: { session } } = await supa.auth.getSession();
+    const res = await fetch(`${API}/api/admin/refund-approve`, {
+      method: 'POST',
+      headers: {
+        'authorization': `Bearer ${session.access_token}`,
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({
+        request_id: requestId,
+        admin_notes: adminNotes
+      })
+    });
+    const data = await res.json();
+    
+    if (!data.ok) {
+      if (data.error?.includes('Polar')) {
+        if (confirm(`Polar refund failed: ${data.error}\n\nMark approved anyway? (You'll need to refund manually via Polar dashboard)`)) {
+          const res2 = await fetch(`${API}/api/admin/refund-approve`, {
+            method: 'POST',
+            headers: {
+              'authorization': `Bearer ${session.access_token}`,
+              'content-type': 'application/json'
+            },
+            body: JSON.stringify({
+              request_id: requestId,
+              admin_notes: adminNotes + ' [Manual Polar refund required]',
+              skip_polar_refund: true
+            })
+          });
+          const data2 = await res2.json();
+          if (!data2.ok) throw new Error(data2.error);
+          toast('Marked as approved (manual Polar refund needed)', 'ok');
+          loadRefundList(refundsState.tab);
+          loadPendingRefundCount();
+          return;
+        } else return;
+      }
+      throw new Error(data.error);
+    }
+    
+    toast('Refund approved & processed ✓', 'ok');
+    loadRefundList(refundsState.tab);
+    loadPendingRefundCount();
+  } catch (e) {
+    toast('Failed: ' + e.message, 'err');
+  }
+}
+
+async function rejectRefund(requestId, userEmail) {
+  const reason = prompt(
+    `Reject refund request from ${userEmail}?\n\n` +
+    `Reason (will be shown to user):`,
+    ''
+  );
+  
+  if (reason === null) return;
+  if (!reason.trim()) {
+    if (!confirm('No reason provided. Reject anyway?')) return;
+  }
+  
+  try {
+    const { data: { session } } = await supa.auth.getSession();
+    const res = await fetch(`${API}/api/admin/refund-reject`, {
+      method: 'POST',
+      headers: {
+        'authorization': `Bearer ${session.access_token}`,
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({
+        request_id: requestId,
+        admin_notes: reason || null
+      })
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error);
+    
+    toast('Refund rejected', 'ok');
+    loadRefundList(refundsState.tab);
+    loadPendingRefundCount();
+  } catch (e) {
+    toast('Failed: ' + e.message, 'err');
+  }
+}
+
 </script>
 </body>
 </html>
