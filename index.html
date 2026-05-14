@@ -457,6 +457,8 @@ input:focus,textarea:focus,select:focus{border-color:rgba(167,139,250,.5)}
       <span class="home-topbar-link" onclick="document.getElementById('home-showcase-section').scrollIntoView({behavior:'smooth'})">Gallery</span>
       <a class="home-topbar-link" href="/guide" style="text-decoration:none">Guide</a>
       <a class="home-topbar-link" href="/pricing" style="text-decoration:none">Pricing</a>
+      <button class="home-topbar-link" id="home-signin-btn" onclick="openAuthModal()" style="background:transparent;border:1px solid var(--border);font-family:inherit;display:none">Sign in</button>
+      <a class="home-topbar-link" id="home-account-link" href="/account" style="text-decoration:none;display:none">⚙️ Account</a>
       <button class="home-topbar-cta" onclick="openStudio()">Open Studio →</button>
     </div>
   </div>
@@ -930,6 +932,59 @@ function renderUserWidget() {
     `;
   } else {
     el.innerHTML = `<button class="sb-signin" onclick="openAuthModal()">Sign in with Google</button>`;
+  }
+  
+  // 🆕 Home topbar Sign in / Account 버튼 토글
+  const homeSigninBtn = document.getElementById('home-signin-btn');
+  const homeAccountLink = document.getElementById('home-account-link');
+  if (homeSigninBtn && homeAccountLink) {
+    if (S.user) {
+      homeSigninBtn.style.display = 'none';
+      homeAccountLink.style.display = 'inline-block';
+    } else {
+      homeSigninBtn.style.display = 'inline-block';
+      homeAccountLink.style.display = 'none';
+    }
+  }
+  
+  // 🆕 생성 버튼들 텍스트 업데이트 (로그인 안 했으면 "Sign in to..." 표시)
+  updateGenerationButtons();
+}
+
+// 🆕 생성 버튼 텍스트를 로그인 상태에 따라 변경
+function updateGenerationButtons() {
+  const isSignedIn = !!S.user;
+  
+  const ccBtn = document.getElementById('cc-btn');
+  if (ccBtn && !ccBtn.disabled) {
+    ccBtn.textContent = isSignedIn 
+      ? '✦ Design My Character · 100 credits'
+      : '🔒 Sign in to Design Character';
+  }
+  
+  const imgBtn = document.getElementById('img-btn');
+  if (imgBtn && !imgBtn.disabled) {
+    imgBtn.textContent = isSignedIn
+      ? '✦ Generate Image · 100 credits'
+      : '🔒 Sign in to Generate Image';
+  }
+  
+  const vidBtn = document.getElementById('vid-btn');
+  if (vidBtn && !vidBtn.disabled) {
+    // 비디오는 동적 가격 (5/10/15초)이라 기존 로직 사용
+    if (!isSignedIn) {
+      vidBtn.textContent = '🔒 Sign in to Generate Video';
+    } else {
+      // 로그인 됐으면 동적 가격 함수 호출 (이미 있는 updateVideoBtnText 같은 함수)
+      const duration = S.vidRefVideoDuration;
+      if (duration && typeof videoCreditCost === 'function') {
+        const cost = videoCreditCost(duration);
+        const sec = Math.ceil(duration);
+        vidBtn.textContent = `✦ Generate Video · ${cost.toLocaleString()} credits (${sec}s)`;
+      } else {
+        vidBtn.textContent = '✦ Generate Video · 500 credits';
+      }
+    }
   }
 }
 
