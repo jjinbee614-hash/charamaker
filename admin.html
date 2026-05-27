@@ -542,6 +542,11 @@ async function loadGallery() {
       .order('created_at', { ascending: false });
     if (error) throw error;
 
+    // 🆕 임시 URL 카운트 (aliyuncs 등 만료 가능한 URL)
+    const tempUrlCount = (items || []).filter(i => 
+      i.url && !i.url.includes('fal.media') && !i.url.includes('fal.ai')
+    ).length;
+
     if (!items || !items.length) {
       content.innerHTML = '<div class="empty">No items in the gallery yet.</div>';
       return;
@@ -553,7 +558,22 @@ async function loadGallery() {
       video:     items.filter(i => i.type === 'video'),
     };
 
-    content.innerHTML = ['character', 'image', 'video'].map(t => {
+    // 🆕 임시 URL이 있으면 마이그레이션 버튼 표시
+    let migrationBanner = '';
+    if (tempUrlCount > 0) {
+      migrationBanner = `
+        <div style="background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.3);border-radius:12px;padding:1.2rem;margin-bottom:1.5rem">
+          <div style="font-weight:700;color:var(--r);margin-bottom:.4rem">⚠️ ${tempUrlCount} items have temporary URLs (will expire in 24h)</div>
+          <div style="font-size:.85rem;color:var(--muted);margin-bottom:.8rem;line-height:1.5">
+            These items use Atlas Cloud's temporary storage. Click "Migrate" to copy them to fal.ai permanent storage. Expired items will be auto-deactivated.
+          </div>
+          <button class="btn btn-grad" id="migrate-btn" onclick="migrateShowcase()">🔄 Migrate 10 items to permanent storage</button>
+          <span id="migrate-status" style="margin-left:1rem;color:var(--muted);font-size:.85rem"></span>
+        </div>
+      `;
+    }
+
+    content.innerHTML = migrationBanner + ['character', 'image', 'video'].map(t => {
       if (!grouped[t].length) return '';
       const label = t === 'character' ? 'Characters' : t === 'image' ? 'Images' : 'Videos';
       return `
@@ -854,6 +874,55 @@ async function rejectRefund(requestId, userEmail) {
     loadPendingRefundCount();
   } catch (e) {
     toast('Failed: ' + e.message, 'err');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// SHOWCASE MIGRATION (move temp URLs to fal.ai permanent storage)
+// ═══════════════════════════════════════════════════════════
+async function migrateShowcase() {
+  const btn = document.getElementById('migrate-btn');
+  const statusEl = document.getElementById('migrate-status');
+  if (!btn) return;
+  
+  if (!confirm('Migrate 10 items to permanent storage?\n\nThis may take 1-2 minutes. Expired items will be auto-deactivated.')) return;
+  
+  btn.disabled = true;
+  btn.textContent = '⏳ Migrating...';
+  if (statusEl) statusEl.textContent = 'Processing...';
+  
+  try {
+    const { data: { session } } = await supa.auth.getSession();
+    const res = await fetch(`${API}/api/admin/migrate-showcase`, {
+      method: 'POST',
+      headers: {
+        'authorization': `Bearer ${session.access_token}`,
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({ limit: 10 })
+    });
+    const data = await res.json();
+    
+    if (!data.ok) throw new Error(data.error);
+    
+    const r = data.results;
+    let msg;
+    if (r.total === 0) {
+      msg = '✅ All items already on permanent storage!';
+    } else {
+      msg = `✅ Migrated ${r.migrated}/${r.total}, Failed: ${r.failed}`;
+      if (r.failed > 0) msg += ' (expired items auto-deactivated)';
+    }
+    
+    toast(msg, r.failed === 0 ? 'ok' : 'err');
+    
+    // Reload gallery after 1.5s
+    setTimeout(() => loadGallery(), 1500);
+  } catch (e) {
+    toast('Migration failed: ' + e.message, 'err');
+    btn.disabled = false;
+    btn.textContent = '🔄 Migrate 10 items to permanent storage';
+    if (statusEl) statusEl.textContent = '';
   }
 }
 
