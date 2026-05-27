@@ -2641,10 +2641,12 @@ function interleaveVideosAndImages(videos, images) {
 }
 
 async function handleBrokenGalleryItem(el, showcaseId) {
+  // 🆕 자동 비활성화 제거 — 화면에서 숨기기만 함
+  // (일시적 로드 실패로 DB 데이터가 영구 비활성화되는 문제 방지)
   try {
     el.parentElement.style.display = 'none';
-    console.warn('[gallery] hiding broken card:', showcaseId);
-    await supa.from('showcase').update({ is_active: false }).eq('id', showcaseId);
+    console.warn('[gallery] hiding broken card (visual only):', showcaseId);
+    // DB update 제거됨 — admin이 수동으로 관리
   } catch (e) {}
 }
 
