@@ -318,6 +318,10 @@ a{color:inherit;text-decoration:none}
   <div class="hero-pill">PRICING</div>
   <h1>Simple plans.<br><span class="gr">Powerful creation.</span></h1>
   <p>Start free. Upgrade when you're ready to scale your AI character into a viral content machine.</p>
+  <div style="display:inline-flex;align-items:center;gap:.5rem;margin-top:1.2rem;padding:.7rem 1.2rem;background:linear-gradient(135deg,rgba(247,147,26,.1),rgba(98,126,234,.1));border:1px solid rgba(247,147,26,.3);border-radius:100px;font-size:.85rem;color:var(--white);font-weight:500">
+    <span style="font-size:1rem">🪙</span>
+    <span>Crypto payments only · BTC, ETH, USDC, USDT, SOL accepted</span>
+  </div>
 </section>
 
 <!-- Plans -->
@@ -589,41 +593,13 @@ a{color:inherit;text-decoration:none}
   </div>
 </div>
 
-<!-- 🆕 Payment method selector modal -->
-<div class="signin-modal" id="payment-method-modal" onclick="closePaymentMethodModal()">
-  <div class="signin-modal-card" onclick="event.stopPropagation()" style="max-width:460px">
-    <div class="signin-modal-icon">💳</div>
-    <div class="signin-modal-title">Choose payment method</div>
-    <div class="signin-modal-msg" style="margin-bottom:1.5rem">
-      Pay with credit card or crypto.
-    </div>
-    
-    <button class="btn-google" onclick="payWithCard()" style="margin-bottom:.7rem">
-      <span style="font-size:1.3rem">💳</span>
-      <span style="flex:1;text-align:center">Pay with Card</span>
-    </button>
-    
-    <button class="btn-google" onclick="payWithCrypto()" style="background:linear-gradient(135deg,#f7931a,#627eea);color:#fff;border:none">
-      <span style="font-size:1.3rem">🪙</span>
-      <span style="flex:1;text-align:center">Pay with Crypto</span>
-    </button>
-    
-    <div style="font-size:.7rem;color:var(--muted);margin-top:1rem;line-height:1.5">
-      💳 Card: Visa, Mastercard, AMEX (via Polar)<br>
-      🪙 Crypto: BTC, ETH, USDC, USDT, SOL (via NOWPayments)
-    </div>
-    
-    <button class="signin-modal-close" onclick="closePaymentMethodModal()">Cancel</button>
-  </div>
-</div>
-
 <!-- 🆕 Crypto currency picker modal -->
 <div class="signin-modal" id="crypto-currency-modal" onclick="document.getElementById('crypto-currency-modal').classList.remove('show')">
   <div class="signin-modal-card" onclick="event.stopPropagation()" style="max-width:500px">
     <div class="signin-modal-icon">🪙</div>
-    <div class="signin-modal-title">Select cryptocurrency</div>
+    <div class="signin-modal-title">Pay with Crypto</div>
     <div class="signin-modal-msg" style="margin-bottom:1.5rem">
-      Choose which crypto to pay with. You'll be redirected to a secure payment page.
+      Select your cryptocurrency. You'll be redirected to a secure NOWPayments page to complete the transaction.
     </div>
     
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
@@ -636,6 +612,10 @@ a{color:inherit;text-decoration:none}
     </div>
     
     <div id="crypto-loading-msg" style="display:none;margin-top:1rem;color:var(--muted);font-size:.85rem">⏳ Creating payment...</div>
+    
+    <div style="font-size:.7rem;color:var(--muted);margin-top:1rem;line-height:1.5">
+      Payments are processed by NOWPayments. Subscription plans grant 30 days of access. Renew manually after expiration.
+    </div>
     
     <button class="signin-modal-close" onclick="document.getElementById('crypto-currency-modal').classList.remove('show')">Cancel</button>
   </div>
@@ -705,8 +685,7 @@ a{color:inherit;text-decoration:none}
   }
 
   async function startCheckout(planKey, btnEl) {
-    const baseUrl = POLAR_CHECKOUT_URLS[planKey];
-    if (!baseUrl) {
+    if (!CRYPTO_PRODUCTS_AVAILABLE[planKey]) {
       alert('Plan not found.');
       return;
     }
@@ -738,56 +717,22 @@ a{color:inherit;text-decoration:none}
       return;
     }
 
-    // 🆕 Show payment method selector (Card or Crypto)
+    // 🆕 Crypto-only: 바로 코인 선택 모달로
     if (btnEl) {
       btnEl.disabled = false;
       btnEl.textContent = origText;
     }
-    openPaymentMethodModal(planKey);
-  }
-
-  // 🆕 Payment method modal
-  let selectedPlanKey = null;
-  
-  function openPaymentMethodModal(planKey) {
     selectedPlanKey = planKey;
-    document.getElementById('payment-method-modal').classList.add('show');
-  }
-  
-  function closePaymentMethodModal() {
-    selectedPlanKey = null;
-    document.getElementById('payment-method-modal').classList.remove('show');
-  }
-  
-  // Pay with Card (Polar) — 기존 로직
-  async function payWithCard() {
-    if (!selectedPlanKey) return;
-    const planKey = selectedPlanKey;
-    closePaymentMethodModal();
-    
-    const baseUrl = POLAR_CHECKOUT_URLS[planKey];
-    const { data: { session } } = await supa.auth.getSession();
-    const user = session?.user;
-    
-    const params = new URLSearchParams();
-    params.set('customer_email', user.email);
-    const name = user.user_metadata?.full_name || user.user_metadata?.name;
-    if (name) params.set('customer_name', name);
-    params.set('metadata[user_id]', user.id);
-
-    const checkoutUrl = `${baseUrl}?${params.toString()}`;
-    console.log('[checkout] redirecting to Polar:', checkoutUrl);
-    window.location.href = checkoutUrl;
-  }
-  
-  // 🆕 Pay with Crypto (NOWPayments)
-  async function payWithCrypto() {
-    if (!selectedPlanKey) return;
-    
-    // Show crypto currency picker
-    document.getElementById('payment-method-modal').classList.remove('show');
     document.getElementById('crypto-currency-modal').classList.add('show');
   }
+
+  // 가격/플랜 매핑 (worker.js의 CRYPTO_PRODUCTS와 동일)
+  const CRYPTO_PRODUCTS_AVAILABLE = {
+    'starter': true, 'creator': true, 'pro': true,
+    'mini': true, 'small': true, 'medium': true, 'large': true,
+  };
+  
+  let selectedPlanKey = null;
   
   async function selectCryptoCurrency(currency) {
     const planKey = selectedPlanKey;
