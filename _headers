@@ -1,4 +1,4 @@
 /*
-     Content-Security-Policy: frame-ancestors 'self' https://gruva.app https://*.gruva.app https://charamaker.app https://www.charamaker.app
+     Content-Security-Policy: frame-ancestors *
      X-Content-Type-Options: nosniff
      Referrer-Policy: strict-origin-when-cross-origin
