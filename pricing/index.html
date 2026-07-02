@@ -670,6 +670,12 @@ a{color:inherit;text-decoration:none}
 
   async function signInWithGoogle() {
     try {
+      // iframe 안이면 새 탭에서 열기 (Google OAuth는 iframe 차단)
+      const inIframe = window.self !== window.top;
+      if (inIframe) {
+        window.open(window.location.origin + '/pricing', '_blank');
+        return;
+      }
       // Redirect back to /pricing after sign-in
       const { error } = await supa.auth.signInWithOAuth({
         provider: 'google',
