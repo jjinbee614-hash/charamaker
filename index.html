@@ -417,6 +417,24 @@ input:focus,textarea:focus,select:focus{border-color:rgba(167,139,250,.5)}
 <div class="amb amb2"></div>
 <div class="toast" id="toast"></div>
 
+<!-- iframe 안일 때만 보이는 배너 (전체 화면으로 열기 안내) -->
+<div id="iframe-banner" style="display:none;position:sticky;top:0;z-index:9998;background:linear-gradient(135deg,#f7931a,#627eea);color:#fff;padding:.6rem 1rem;text-align:center;font-size:.85rem;font-weight:500">
+  For full features (sign-in, generation), 
+  <a href="#" onclick="openFullApp();return false;" style="color:#fff;text-decoration:underline;font-weight:700">open CharaMaker in a new tab →</a>
+</div>
+<script>
+  // iframe 안이면 배너 표시
+  if (window.self !== window.top) {
+    document.addEventListener('DOMContentLoaded', function() {
+      var b = document.getElementById('iframe-banner');
+      if (b) b.style.display = 'block';
+    });
+  }
+  function openFullApp() {
+    window.open(window.location.origin + window.location.pathname, '_blank');
+  }
+</script>
+
 <!-- Modal viewer -->
 <div class="modal" id="modal" onclick="closeModal()">
   <button class="modal-close" onclick="closeModal()">✕</button>
@@ -883,6 +901,18 @@ function closeAuthModal() {
 
 async function signInWithGoogle() {
   try {
+    // iframe 안에 있는지 감지
+    const inIframe = window.self !== window.top;
+
+    if (inIframe) {
+      // iframe 안: Google OAuth가 iframe에서 차단되므로
+      // charamaker.app 전체를 새 탭에서 열어 정상 로그인/사용하도록 안내
+      window.open(window.location.origin + window.location.pathname, '_blank');
+      toast('Opening CharaMaker in a new tab for sign-in...');
+      return;
+    }
+
+    // 일반(iframe 아님): 기존 방식대로 리다이렉트
     const { error } = await supa.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: window.location.origin + window.location.pathname },
